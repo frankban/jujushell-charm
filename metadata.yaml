@@ -1,0 +1,12 @@
+name: jaas-shell-charm
+series:
+    - xenial
+summary: allow shell access to one's juju model through a web interface
+maintainer: Madison Scott-Clary <madison.scott-clary@canonical.com>
+description: |
+    This is the first proof-of-concept implementation of JAAS.sh, which allows one to access the juju CLI connected to the model through a shell instance accessed via xterm.js and terminado
+tags:
+    - ops
+provides:
+    website:
+        interface: http
