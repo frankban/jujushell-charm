@@ -1,4 +1,7 @@
-from charms.reactive import hook, set_state
+from charms.reactive import (
+    hook,
+    set_state,
+)
 
 @hook('install')
 def install():
