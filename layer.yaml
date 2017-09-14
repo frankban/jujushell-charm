@@ -1,0 +1,8 @@
+includes: ['layer:basic', 'layer:snap']
+repo: https://github.com/CanonicalLtd/jaas-shell-charm
+options:
+    basic:
+        packages: ['python3-pip']
+    snap:
+        juju:
+            classic: true
