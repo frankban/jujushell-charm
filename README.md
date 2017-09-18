@@ -1,4 +1,4 @@
-# jaas-shell
+# juju-shell
 
 A charm for allowing access to the Juju CLI through xterm.js. The charm spins up a [terminado]() server which listens to WebSocket connections and passes them to the CLI, allowing the user to access juju.
 
@@ -6,7 +6,7 @@ A charm for allowing access to the Juju CLI through xterm.js. The charm spins up
 
 This charm sets the following states:
 
-* jaas-shell.installed --- set when the installed hook completes.
+* juju-shell.installed --- set when the installed hook completes.
 
 ## Current status
 

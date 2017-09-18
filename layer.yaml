@@ -1,5 +1,5 @@
 includes: ['layer:basic', 'layer:snap']
-repo: https://github.com/CanonicalLtd/jaas-shell-charm
+repo: https://github.com/CanonicalLtd/juju-shell-charm
 options:
     basic:
         packages: ['python3-pip']
