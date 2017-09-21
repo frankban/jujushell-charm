@@ -2,7 +2,7 @@ includes: ['layer:basic', 'layer:snap']
 repo: https://github.com/CanonicalLtd/juju-shell-charm
 options:
     basic:
-        packages: ['python3-pip']
+        packages: ['python3']
     snap:
         juju:
             classic: true
