@@ -3,7 +3,7 @@
 
 You will need charm tools to work with this charm:
 
-    snap install charm
+    snap install charm --classic
 
 Once that's installed, you will need to set up your working directories:
 
