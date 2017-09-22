@@ -1,0 +1,6 @@
+[Unit]
+Description=Juju shell terminal server
+
+[Service]
+ExecStart=/usr/bin/python3 {{juju_shell}}
+User=ubuntu
