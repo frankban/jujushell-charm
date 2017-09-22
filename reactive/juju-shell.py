@@ -1,14 +1,14 @@
 import os
 import subprocess
 
+from charmhelpers.core.hookenv import (
+open_port,
+status_set,
+)
+from charmhelpers.core.templating import render
 from charms.reactive import (
     hook,
     set_state,
-)
-from charmhelpers.core.templating import render
-from charmhelpers.core.hookenv import (
-    open_port,
-    status_set,
 )
 
 
@@ -22,15 +22,9 @@ def install_service():
            '/usr/lib/systemd/user/juju-shell.service',
            {'juju_shell': os.path.join(FILES, 'juju-shell', 'juju-shell.py')},
            perms=664)
-    try:
-        subprocess.check_call(('systemctl', 'enable',
-                               '/usr/lib/systemd/user/juju-shell.service'))
-    except:
-        status_set('blocked', 'error enabling juju-shell.service')
-    try:
-        subprocess.check_call(('systemctl', 'daemon-reload'))
-    except:
-        status_set('blocked', 'error reloading systemd daemon')
+    subprocess.check_call(('systemctl', 'enable',
+                           '/usr/lib/systemd/user/juju-shell.service'))
+    subprocess.check_call(('systemctl', 'daemon-reload'))
     set_state('juju-shell.installed')
 
 
@@ -38,10 +32,7 @@ def install_service():
 def install_deps():
     """Installs the python deps for terminado."""
     reqs = os.path.join(FILES, 'requirements.txt')
-    try:
-        subprocess.check_call(('pip', 'install', '-r', reqs))
-    except:
-        status_set('blocked', 'error installing python deps from pypi')
+    subprocess.check_call(('pip', 'install', '-r', reqs))
     # For now, open the port on which terminado is running. This is 8765 instead
     # of 80 so that the service can be run as ubuntu, rather than root. This
     # Will be changed when we run the WS proxy.
@@ -53,16 +44,10 @@ def install_deps():
 @hook('config-changed')
 def restart():
     """Restarts the juju-shell service."""
-    try:
-        subprocess.check_call(('systemctl', 'restart', 'juju-shell.service'))
-    except:
-        status_set('blocked', 'error (re)starting juju shell service')
+    subprocess.check_call(('systemctl', 'restart', 'juju-shell.service'))
 
 
 @hook('stop')
 def stop():
     """Stops the juju-shell service."""
-    try:
-        subprocess.check_call(('systemctl', 'stop', 'juju-shell.service'))
-    except:
-        status_set('blocked', 'error stopping juju shell service')
+    subprocess.check_call(('systemctl', 'stop', 'juju-shell.service'))
