@@ -1,6 +1,5 @@
 import os
 import subprocess
-import yaml
 
 from charmhelpers.core.hookenv import (
     open_port,
@@ -12,6 +11,7 @@ from charms.reactive import (
     remove_state,
     set_state,
 )
+import yaml
 
 
 FILES = os.path.join(os.getcwd(), 'files')
