@@ -10,12 +10,16 @@ tags:
 provides:
     website:
         interface: http
+resources:
+    termserver:
+        type: file
+        filename: termserver.tar.gz
+        description: LXC image for hosting terminado
 # XXX
 # We will eventually want to allow the user to specify their own juju snap, but
 # this is dependent on https://github.com/juju/charmstore-client/issues/103
 # Being fixed.
 # Makyo 2017-09-12
-# resources:
 #     juju:
 #         type: file
 #         filename: juju.snap
