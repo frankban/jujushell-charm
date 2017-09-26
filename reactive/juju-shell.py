@@ -1,5 +1,6 @@
 import os
 import subprocess
+import yaml
 
 from charmhelpers.core.hookenv import (
     open_port,
@@ -21,7 +22,6 @@ def install_service():
     """Installs the jujushell systemd service."""
     render('jujushell.service',
            '/usr/lib/systemd/user/jujushell.service',
-           # {'juju_shell': os.path.join(FILES, 'juju-shell', 'juju-shell.py')},
            {
                'jujushell': os.path.join(FILES, 'jujushell'),
                'jujushell_config': os.path.join(FILES, 'config.yaml'),
@@ -29,10 +29,10 @@ def install_service():
            perms=775)
     api_addrs = os.environ.get('JUJU_API_ADDRESSES')
     if api_addrs is None:
-        raise "Could not find API addresses"
-    api_addrs = str(api_addrs.split())
+        raise ValueError("Could not find API addresses")
+    api_addrs = api_addrs.split()
     render('config.yaml', os.path.join(FILES, 'config.yaml'),
-           {'api_addrs': api_addrs})
+           {'api_addrs': yaml.safe_dump(api_addrs)})
     subprocess.check_call(('systemctl', 'enable',
                            '/usr/lib/systemd/user/jujushell.service'))
     subprocess.check_call(('systemctl', 'daemon-reload'))
@@ -41,9 +41,6 @@ def install_service():
 
 @hook('start')
 def install_deps():
-    """Installs the python deps for terminado."""
-    reqs = os.path.join(FILES, 'requirements.txt')
-    subprocess.check_call(('pip', 'install', '-r', reqs))
     # For now, open the port on which terminado is running. This is 8765 instead
     # of 80 so that the service can be run as ubuntu, rather than root. This
     # Will be changed when we run the WS proxy.
