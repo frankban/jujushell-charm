@@ -1,0 +1,6 @@
+[Unit]
+Description=Juju shell terminal server
+
+[Service]
+ExecStart={{jujushell}} {{jujushell_config}}
+User=ubuntu
