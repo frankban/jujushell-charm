@@ -18,24 +18,38 @@ from charms.reactive import (
 import yaml
 
 
-FILES = os.path.join(os.getcwd(), 'files')
+CURDIR = os.getcwd()
+FILES = os.path.join(CURDIR, 'files')
+AGENT = os.path.join(CURDIR, '..', 'agent.conf')
 IMAGE_NAME = 'termserver'
 
 
 def build_config():
     """Build the jujushell config server."""
     log('building jujushell config.yaml')
-    cfg = config()
     api_addrs = os.environ.get('JUJU_API_ADDRESSES')
     if api_addrs is None:
         raise ValueError('Could not find API addresses')
-    api_addrs = api_addrs.split()
-    render('config.yaml', os.path.join(FILES, 'config.yaml'), {
-        'api_addrs': yaml.safe_dump(api_addrs),
-        'image_name': IMAGE_NAME,
+    cfg = config()
+    data = {
+        'juju-addrs': api_addrs.split(),
+        'juju-cert': get_juju_cert(AGENT),
+        'image-name': IMAGE_NAME,
+        'log-level': cfg['log-level'],
         'port': cfg['port'],
-        'log_level': cfg['log-level'],
-    })
+    }
+    with open(os.path.join(FILES, 'config.yaml'), 'w') as stream:
+        yaml.safe_dump(data, stream=stream)
+
+
+def get_juju_cert(path):
+    """Return the certificate to use when connecting to the controller.
+
+    The certificate is provided in PEM format and it is retrieved by parsing
+    agent.conf.
+    """
+    with open(path) as stream:
+        return yaml.safe_load(stream)['cacert']
 
 
 def manage_ports():
