@@ -1,4 +1,0 @@
-port: {{port}}
-juju-addrs: {{api_addrs}}
-log-level: {{log_level}}
-image-name: {{image_name}}
