@@ -2,7 +2,12 @@ includes: ['layer:basic', 'layer:snap']
 repo: https://github.com/CanonicalLtd/juju-shell-charm
 options:
     basic:
-        packages: ['python3', 'python-yaml']
+        packages:
+            - python3
+            - python-yaml
+            - zfsutils-linux
     snap:
         juju:
             classic: true
+        lxd:
+            classic: false
