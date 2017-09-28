@@ -31,22 +31,22 @@ def build_config():
         raise ValueError('Could not find API addresses')
     api_addrs = api_addrs.split()
     render('config.yaml', os.path.join(FILES, 'config.yaml'), {
-       'api_addrs': yaml.safe_dump(api_addrs),
-       'image_name': IMAGE_NAME,
-       'port': cfg['port'],
-       'log_level': cfg['log-level']
-   })
+        'api_addrs': yaml.safe_dump(api_addrs),
+        'image_name': IMAGE_NAME,
+        'port': cfg['port'],
+        'log_level': cfg['log-level'],
+    })
 
 
 def manage_ports():
-   """Opens the port on which to listen, closing the previous if needed."""
-   cfg = config()
-   if cfg.changed('port'):
-       log('port updated from {} to {}'.format(
-       cfg.previous('port'), cfg['port']))
-       close_port(cfg.previous('port'))
-   open_port(cfg['port'])
-   build_config()
+    """Opens the port on which to listen, closing the previous if needed."""
+    cfg = config()
+    if cfg.changed('port'):
+        log('port updated from {} to {}'.format(
+            cfg.previous('port'), cfg['port']))
+        close_port(cfg.previous('port'))
+    open_port(cfg['port'])
+    build_config()
 
 
 @hook('install')
@@ -112,7 +112,6 @@ def restart():
     status_set('active', 'jujushell started')
     set_state('jujushell.started')
     remove_state('jujushell.stopped')
-
 
 
 @hook('stop')
