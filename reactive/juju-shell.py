@@ -54,12 +54,10 @@ def install_service():
     """Installs the jujushell systemd service."""
     # Render the jujushell systemd service module.
     status_set('maintenance', 'creating systemd module')
-    render('jujushell.service',
-           '/usr/lib/systemd/user/jujushell.service', {
-               'jujushell': os.path.join(FILES, 'jujushell'),
-               'jujushell_config': os.path.join(FILES, 'config.yaml'),
-           },
-           perms=775)
+    render('jujushell.service', '/usr/lib/systemd/user/jujushell.service', {
+        'jujushell': os.path.join(FILES, 'jujushell'),
+        'jujushell_config': os.path.join(FILES, 'config.yaml'),
+    }, perms=775)
 
     # Retrieve the jujushell binary resource.
     resource = resource_get('jujushell')
@@ -79,16 +77,16 @@ def install_service():
         subprocess.check_call(('lxc', 'image', 'delete', IMAGE_NAME))
     except:
         log('image does not yet exist')
-    subprocess.check_call(('lxc', 'image', 'import', resource,
-                           '--alias={}'.format(IMAGE_NAME)))
+    subprocess.check_call((
+        'lxc', 'image', 'import', resource, '--alias={}'.format(IMAGE_NAME)))
 
     # Build the configuration file for jujushell.
     build_config()
 
     # Enable the jujushell module.
     status_set('maintenance', 'enabling systemd module')
-    subprocess.check_call(('systemctl', 'enable',
-                           '/usr/lib/systemd/user/jujushell.service'))
+    subprocess.check_call((
+        'systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service'))
     subprocess.check_call(('systemctl', 'daemon-reload'))
     set_state('jujushell.installed')
     status_set('maintenance', 'jujushell installed')
