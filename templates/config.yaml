@@ -1,5 +1,0 @@
-juju-addrs: {{juju_addrs}}
-juju-cert: {{juju_cert}}
-image-name: {{image_name}}
-log-level: {{log_level}}
-port: {{port}}
