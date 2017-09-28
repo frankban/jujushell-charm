@@ -1,4 +1,4 @@
-name: juju-shell-charm
+name: jujushell
 series:
     - xenial
 summary: allow shell access to one's juju model through a web interface
