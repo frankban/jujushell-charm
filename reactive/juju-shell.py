@@ -106,7 +106,6 @@ def config_changed():
 
 def restart():
     """Restarts the jujushell service."""
-    log('BOOM WE PROBABLY HIT START')
     status_set('maintenance', '(re)starting the jujushell service')
     manage_ports()
     subprocess.check_call(('systemctl', 'restart', 'jujushell.service'))
