@@ -1,5 +1,7 @@
 import os
+import pipes
 import subprocess
+import time
 
 from charmhelpers.core.hookenv import (
     close_port,
@@ -12,8 +14,10 @@ from charmhelpers.core.hookenv import (
 from charmhelpers.core.templating import render
 from charms.reactive import (
     hook,
+    only_once,
     remove_state,
     set_state,
+    when,
 )
 import yaml
 
@@ -22,6 +26,29 @@ CURDIR = os.getcwd()
 FILES = os.path.join(CURDIR, 'files')
 AGENT = os.path.join(CURDIR, '..', 'agent.conf')
 IMAGE_NAME = 'termserver'
+LXC = '/snap/bin/lxc'
+BRIGE_NAME = 'jujushellbr0'
+
+
+def call(command, *args):
+    """Call a subprocess passing the given arguments.
+
+    Take the subcommand and its parameters as args.
+    Raise an OSError with the error output in case of failure.
+    """
+    pipe = subprocess.PIPE
+    cmd = (command,) + args
+    cmdline = ' '.join(map(pipes.quote, cmd))
+    log('Running the following: {!r}'.format(cmdline))
+    try:
+        process = subprocess.Popen(cmd, stdin=pipe, stdout=pipe, stderr=pipe)
+    except OSError as err:
+        raise OSError('Command {!r} not found: {}'.format(command, err))
+    output, error = map(lambda msg: msg.decode('utf-8'), process.communicate())
+    if process.poll():
+        raise OSError(
+            'Command {!r} failed: {!r}'.format(cmdline, output + error))
+    log('Command {!r} succeeded: {}'.format(cmdline, output))
 
 
 def build_config():
@@ -72,38 +99,45 @@ def install_service():
         'jujushell': os.path.join(FILES, 'jujushell'),
         'jujushell_config': os.path.join(FILES, 'config.yaml'),
     }, perms=775)
-
     # Retrieve the jujushell binary resource.
     resource = resource_get('jujushell')
     if not resource:
         raise ValueError('Could not retrieve jujushell resource')
     os.rename(resource, os.path.join(FILES, 'jujushell'))
     os.chmod(os.path.join(FILES, 'jujushell'), 0o775)
+    # Build the configuration file for jujushell.
+    build_config()
+    # Enable the jujushell module.
+    status_set('maintenance', 'enabling systemd module')
+    call('systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service')
+    call('systemctl', 'daemon-reload')
+    set_state('jujushell.installed')
+    status_set('maintenance', 'jujushell installed')
 
-    # Retrieve the LXD image from the the resource and import it.
+
+@when('snap.installed.lxd')
+@only_once
+def setup_lxd():
+    """Configure LXD."""
     status_set('maintenance', 'fetching LXD image')
-    subprocess.check_call(('lxd', 'init', '--auto'))
     resource = resource_get('termserver')
     if not resource:
         raise ValueError('Could not retrieve termserver resource')
     try:
         # Catch an exception here in case we are retrying this hook.
-        subprocess.check_call(('lxc', 'image', 'delete', IMAGE_NAME))
+        call(LXC, 'image', 'delete', IMAGE_NAME)
     except:
         log('image does not yet exist')
-    subprocess.check_call((
-        'lxc', 'image', 'import', resource, '--alias={}'.format(IMAGE_NAME)))
+    os.rename(resource, '/tmp/termserver.tar.gz')
 
-    # Build the configuration file for jujushell.
-    build_config()
+    status_set('maintenance', 'setting up LXD')
+    # Wait for the LXD daemon to be up and running.
+    # TODO: we can do better than time.sleep().
+    time.sleep(10)
+    call(os.path.join(FILES, 'setup-lxd.sh'))
 
-    # Enable the jujushell module.
-    status_set('maintenance', 'enabling systemd module')
-    subprocess.check_call((
-        'systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service'))
-    subprocess.check_call(('systemctl', 'daemon-reload'))
-    set_state('jujushell.installed')
-    status_set('maintenance', 'jujushell installed')
+    status_set('maintenance', 'configuring ubuntu user')
+    call('adduser', 'ubuntu', 'lxd')
 
 
 @hook('start')
@@ -120,7 +154,7 @@ def restart():
     """Restarts the jujushell service."""
     status_set('maintenance', '(re)starting the jujushell service')
     manage_ports()
-    subprocess.check_call(('systemctl', 'restart', 'jujushell.service'))
+    call('systemctl', 'restart', 'jujushell.service')
     status_set('active', 'jujushell started')
     set_state('jujushell.started')
     remove_state('jujushell.stopped')
@@ -129,6 +163,6 @@ def restart():
 @hook('stop')
 def stop():
     """Stops the jujushell service."""
-    subprocess.check_call(('systemctl', 'stop', 'jujushell.service'))
+    call('systemctl', 'stop', 'jujushell.service')
     remove_state('jujushell.started')
     set_state('jujushell.stopped')

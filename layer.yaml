@@ -7,7 +7,5 @@ options:
             - python-yaml
             - zfsutils-linux
     snap:
-        juju:
-            classic: true
         lxd:
             classic: false
