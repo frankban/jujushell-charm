@@ -3,15 +3,10 @@ import pipes
 import subprocess
 import time
 
-from charmhelpers.core.hookenv import (
-    close_port,
-    config,
-    log,
-    open_port,
-    resource_get,
-    status_set,
+from charmhelpers.core import (
+    hookenv,
+    templating,
 )
-from charmhelpers.core.templating import render
 from charms.reactive import (
     hook,
     only_once,
@@ -30,7 +25,7 @@ LXC = '/snap/bin/lxc'
 BRIGE_NAME = 'jujushellbr0'
 
 
-def call(command, *args):
+def call(command, *args, **kwargs):
     """Call a subprocess passing the given arguments.
 
     Take the subcommand and its parameters as args.
@@ -39,25 +34,29 @@ def call(command, *args):
     pipe = subprocess.PIPE
     cmd = (command,) + args
     cmdline = ' '.join(map(pipes.quote, cmd))
-    log('Running the following: {!r}'.format(cmdline))
+    hookenv.log('running the following: {!r}'.format(cmdline))
     try:
-        process = subprocess.Popen(cmd, stdin=pipe, stdout=pipe, stderr=pipe)
+        process = subprocess.Popen(
+            cmd, stdin=pipe, stdout=pipe, stderr=pipe, **kwargs)
     except OSError as err:
-        raise OSError('Command {!r} not found: {}'.format(command, err))
+        raise OSError('command {!r} not found: {}'.format(command, err))
     output, error = map(lambda msg: msg.decode('utf-8'), process.communicate())
-    if process.poll():
-        raise OSError(
-            'Command {!r} failed: {!r}'.format(cmdline, output + error))
-    log('Command {!r} succeeded: {}'.format(cmdline, output))
+    retcode = process.poll()
+    if retcode:
+        msg = 'command {!r} failed with retcode {}: {!r}'.format(
+            cmdline, retcode, output + error)
+        hookenv.log(msg)
+        raise OSError(msg)
+    hookenv.log('command {!r} succeeded: {!r}'.format(cmdline, output))
 
 
 def build_config():
-    """Build the jujushell config server."""
-    log('building jujushell config.yaml')
+    """Build and save the jujushell server config."""
+    hookenv.log('building jujushell config.yaml')
     api_addrs = os.environ.get('JUJU_API_ADDRESSES')
     if api_addrs is None:
-        raise ValueError('Could not find API addresses')
-    cfg = config()
+        raise ValueError('could not find API addresses')
+    cfg = hookenv.config()
     data = {
         'juju-addrs': api_addrs.split(),
         'juju-cert': get_juju_cert(AGENT),
@@ -81,63 +80,102 @@ def get_juju_cert(path):
 
 def manage_ports():
     """Opens the port on which to listen, closing the previous if needed."""
-    cfg = config()
+    cfg = hookenv.config()
     if cfg.changed('port'):
-        log('port updated from {} to {}'.format(
+        hookenv.log('port updated from {} to {}'.format(
             cfg.previous('port'), cfg['port']))
-        close_port(cfg.previous('port'))
-    open_port(cfg['port'])
+        hookenv.close_port(cfg.previous('port'))
+    hookenv.open_port(cfg['port'])
     build_config()
+
+
+def restart():
+    """Restarts the jujushell service."""
+    hookenv.status_set('maintenance', '(re)starting the jujushell service')
+    manage_ports()
+    call('systemctl', 'restart', 'jujushell.service')
+    hookenv.status_set('active', 'jujushell started')
+    set_state('jujushell.started')
+    remove_state('jujushell.stopped')
+    hookenv.status_set('active', 'jujushell is ready')
+
+
+def save_resource(name, path):
+    """Retrieve a resource with the given name and save it in the given path.
+
+    Raise an OSError if the resource cannot be retrieved.
+    """
+    hookenv.log('retrieving resource {!r}'.format(name))
+    resource = hookenv.resource_get(name)
+    if not resource:
+        msg = 'cannot retrieve resource {!r}'.format(name)
+        hookenv.log(msg)
+        raise OSError(msg)
+    os.rename(resource, path)
+    hookenv.log('resource {!r} saved at {!r}'.format(name, path))
 
 
 @hook('install')
 def install_service():
     """Installs the jujushell systemd service."""
     # Render the jujushell systemd service module.
-    status_set('maintenance', 'creating systemd module')
-    render('jujushell.service', '/usr/lib/systemd/user/jujushell.service', {
+    hookenv.status_set('maintenance', 'creating systemd module')
+    templating.render(
+        'jujushell.service', '/usr/lib/systemd/user/jujushell.service', {
         'jujushell': os.path.join(FILES, 'jujushell'),
         'jujushell_config': os.path.join(FILES, 'config.yaml'),
     }, perms=775)
     # Retrieve the jujushell binary resource.
-    resource = resource_get('jujushell')
-    if not resource:
-        raise ValueError('Could not retrieve jujushell resource')
-    os.rename(resource, os.path.join(FILES, 'jujushell'))
-    os.chmod(os.path.join(FILES, 'jujushell'), 0o775)
+    binary = os.path.join(FILES, 'jujushell')
+    save_resource('jujushell', binary)
+    os.chmod(binary, 0o775)
     # Build the configuration file for jujushell.
     build_config()
     # Enable the jujushell module.
-    status_set('maintenance', 'enabling systemd module')
+    hookenv.status_set('maintenance', 'enabling systemd module')
     call('systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service')
     call('systemctl', 'daemon-reload')
     set_state('jujushell.installed')
-    status_set('maintenance', 'jujushell installed')
+    hookenv.status_set('maintenance', 'jujushell installed')
 
 
 @when('snap.installed.lxd')
 @only_once
 def setup_lxd():
     """Configure LXD."""
-    status_set('maintenance', 'fetching LXD image')
-    resource = resource_get('termserver')
-    if not resource:
-        raise ValueError('Could not retrieve termserver resource')
-    try:
-        # Catch an exception here in case we are retrying this hook.
-        call(LXC, 'image', 'delete', IMAGE_NAME)
-    except:
-        log('image does not yet exist')
-    os.rename(resource, '/tmp/termserver.tar.gz')
-
-    status_set('maintenance', 'setting up LXD')
-    # Wait for the LXD daemon to be up and running.
-    # TODO: we can do better than time.sleep().
-    time.sleep(10)
-    call(os.path.join(FILES, 'setup-lxd.sh'))
-
-    status_set('maintenance', 'configuring ubuntu user')
+    hookenv.status_set('maintenance', 'configuring group membership')
     call('adduser', 'ubuntu', 'lxd')
+
+    # When running LXD commands, use a working directory that's surely
+    # available also from the perspective of confined LXD.
+    cwd = '/'
+
+    try:
+        call(LXC, 'network', 'show', 'jujushellbr0', cwd=cwd)
+    except OSError:
+        # LXD is not yet initialized.
+        hookenv.status_set('maintenance', 'setting up LXD')
+        # Wait for the LXD daemon to be up and running.
+        # TODO: we can do better than time.sleep().
+        time.sleep(10)
+        call(_LXD_INIT_COMMAND, shell=True, cwd=cwd)
+        hookenv.log('lxd initialized')
+    else:
+        hookenv.log('lxd already initialized')
+
+    try:
+        call(LXC, 'image', 'show', 'termserver', cwd=cwd)
+    except OSError:
+        # The image has not been imported yet.
+        hookenv.status_set('maintenance', 'fetching LXD image')
+        image = '/tmp/termserver.tar.gz'
+        save_resource('termserver', image)
+        hookenv.status_set('maintenance', 'importing LXD image')
+        call(LXC, 'image', 'import', image, '--alias', 'termserver', cwd=cwd)
+        hookenv.log('lxd image imported')
+    else:
+        hookenv.log('lxd image already imported')
+    hookenv.status_set('maintenance', 'LXD set up completed')
 
 
 @hook('start')
@@ -150,19 +188,37 @@ def config_changed():
     restart()
 
 
-def restart():
-    """Restarts the jujushell service."""
-    status_set('maintenance', '(re)starting the jujushell service')
-    manage_ports()
-    call('systemctl', 'restart', 'jujushell.service')
-    status_set('active', 'jujushell started')
-    set_state('jujushell.started')
-    remove_state('jujushell.stopped')
-
-
 @hook('stop')
 def stop():
     """Stops the jujushell service."""
     call('systemctl', 'stop', 'jujushell.service')
     remove_state('jujushell.started')
     set_state('jujushell.stopped')
+
+
+# Define the command used to initialize LXD.
+_LXD_INIT_COMMAND = """
+cat <<EOF | /snap/bin/lxd init --preseed
+networks:
+- name: jujushellbr0
+  type: bridge
+  config:
+    ipv4.address: auto
+    ipv6.address: none
+storage_pools:
+- name: data
+  driver: zfs
+profiles:
+- name: default
+  devices:
+    root:
+      path: /
+      pool: data
+      type: disk
+    eth0:
+      name: eth0
+      nictype: bridged
+      parent: jujushellbr0
+      type: nic
+EOF
+"""
