@@ -171,7 +171,9 @@ def setup_lxd():
         image = '/tmp/termserver.tar.gz'
         save_resource('termserver', image)
         hookenv.status_set('maintenance', 'importing LXD image')
-        call(LXC, 'image', 'import', image, '--alias', 'termserver', cwd=cwd)
+        # Use the stdin trick to work around weird LXD confinement.
+        call('{} image import /dev/stdin --alias termserver < {}'.format(
+            LXC, image), shell=True, cwd=cwd)
         hookenv.log('lxd image imported')
     else:
         hookenv.log('lxd image already imported')
