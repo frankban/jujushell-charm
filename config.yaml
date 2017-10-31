@@ -2,8 +2,25 @@ options:
     port:
         type: int
         default: 8047
-        description: The port on which the service will be listening for WebSocket connections.
+        description: |
+            The port on which the service will be listening for WebSocket
+            connections.
     log-level:
         type: string
         default: info
         description: The log level to apply to jujushell itself.
+    juju-addrs:
+        type: string
+        default: ''
+        description: |
+            A space separated list of Juju controller addresses, including
+            ports. If not provided, the addresses will be obtained from the
+            hooks context.
+    juju-cert:
+        type: string
+        default: from-unit
+        description: |
+            The certificate to use when connecting to the Juju controller API.
+            If not provided, no certificate is used for the connection.
+            If it is set to "from-unit" (the default), then the certificate is
+            obtained from the unit agent file.
