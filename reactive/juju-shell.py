@@ -53,13 +53,21 @@ def call(command, *args, **kwargs):
 def build_config():
     """Build and save the jujushell server config."""
     hookenv.log('building jujushell config.yaml')
-    api_addrs = os.environ.get('JUJU_API_ADDRESSES')
-    if api_addrs is None:
-        raise ValueError('could not find API addresses')
     cfg = hookenv.config()
+
+    def get_string(key):
+        value = cfg.get(key, '') or ''
+        return value.strip()
+
+    juju_addrs = get_string('juju-addrs') or os.getenv('JUJU_API_ADDRESSES')
+    if not juju_addrs:
+        raise ValueError('could not find API addresses')
+    juju_cert = get_string('juju-cert')
+    if juju_cert == 'from-unit':
+        juju_cert = get_juju_cert(AGENT)
     data = {
-        'juju-addrs': api_addrs.split(),
-        'juju-cert': get_juju_cert(AGENT),
+        'juju-addrs': juju_addrs.split(),
+        'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
         'port': cfg['port'],
