@@ -24,3 +24,19 @@ options:
             If not provided, no certificate is used for the connection.
             If it is set to "from-unit" (the default), then the certificate is
             obtained from the unit agent file.
+    tls-cert:
+        type: string
+        default: ''
+        description: |
+          The TLS certificate, if any. If tls is true and none is provided the
+          charm will use a self signed key.
+    tls-key:
+        type: string
+        default: ''
+        description: |
+          The TLS key, if any. If tls is true and none is provided the charm
+          will use a self signed key.
+    tls:
+        type: boolean
+        default: true
+        description: Whether or not to serve jujushell behind TLS.
