@@ -1,3 +1,4 @@
+import base64
 import os
 import pipes
 import subprocess
@@ -22,7 +23,6 @@ FILES = os.path.join(CURDIR, 'files')
 AGENT = os.path.join(CURDIR, '..', 'agent.conf')
 IMAGE_NAME = 'termserver'
 LXC = '/snap/bin/lxc'
-BRIGE_NAME = 'jujushellbr0'
 
 
 def call(command, *args, **kwargs):
@@ -50,6 +50,21 @@ def call(command, *args, **kwargs):
     hookenv.log('command {!r} succeeded: {!r}'.format(cmdline, output))
 
 
+def get_self_signed_cert():
+    subprocess.check_call(
+        ['openssl', 'req', '-x509', '-newkey', 'rsa:4096',
+         '-keyout', 'key.pem',
+         '-out', 'cert.pem',
+         '-days', '365',
+         '-nodes',
+         '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
+    key = open('key.pem').read()
+    cert = open('cert.pem').read()
+    os.remove('cert.pem')
+    os.remove('key.pem')
+    return key, cert
+
+
 def build_config():
     """Build and save the jujushell server config."""
     hookenv.log('building jujushell config.yaml')
@@ -65,6 +80,11 @@ def build_config():
     juju_cert = get_string('juju-cert')
     if juju_cert == 'from-unit':
         juju_cert = get_juju_cert(AGENT)
+
+    tls = cfg['tls']
+    cert = cfg['tls-cert']
+    key = cfg['tls-key']
+
     data = {
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
@@ -72,6 +92,18 @@ def build_config():
         'log-level': cfg['log-level'],
         'port': cfg['port'],
     }
+
+    if tls:
+        if key != "" and cert != "":
+            key = base64.b64decode(key).decode(encoding='UTF-8')
+            cert = base64.b64decode(cert).decode(encoding='UTF-8')
+        else:
+            key, cert = get_self_signed_cert()
+        data.update({
+            'tls-cert': cert,
+            'tls-key': key
+        })
+
     with open(os.path.join(FILES, 'config.yaml'), 'w') as stream:
         yaml.safe_dump(data, stream=stream)
 
