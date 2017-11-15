@@ -9,11 +9,8 @@ from charmhelpers.core import (
     templating,
 )
 from charms.reactive import (
-    hook,
-    only_once,
     remove_state,
     set_state,
-    when,
 )
 import yaml
 
@@ -155,7 +152,6 @@ def save_resource(name, path):
     hookenv.log('resource {!r} saved at {!r}'.format(name, path))
 
 
-@hook('install')
 def install_service():
     """Installs the jujushell systemd service."""
     # Render the jujushell systemd service module.
@@ -179,8 +175,6 @@ def install_service():
     hookenv.status_set('maintenance', 'jujushell installed')
 
 
-@when('snap.installed.lxd')
-@only_once
 def setup_lxd():
     """Configure LXD."""
     hookenv.status_set('maintenance', 'configuring group membership')
@@ -220,17 +214,14 @@ def setup_lxd():
     hookenv.status_set('maintenance', 'LXD set up completed')
 
 
-@hook('start')
 def start():
     restart()
 
 
-@hook('config-changed')
 def config_changed():
     restart()
 
 
-@hook('stop')
 def stop():
     """Stops the jujushell service."""
     call('systemctl', 'stop', 'jujushell.service')
