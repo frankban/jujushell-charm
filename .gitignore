@@ -102,3 +102,7 @@ ENV/
 
 # editors
 .vscode/
+
+# charm build
+builds/
+deps/
