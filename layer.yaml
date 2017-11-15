@@ -1,4 +1,7 @@
-includes: ['layer:basic', 'layer:snap']
+includes:
+    - 'layer:basic'
+    - 'layer:snap'
+    - 'interface:http'
 repo: https://github.com/CanonicalLtd/juju-shell-charm
 options:
     basic:

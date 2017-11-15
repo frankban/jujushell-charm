@@ -115,21 +115,10 @@ def get_juju_cert(path):
         return yaml.safe_load(stream)['cacert']
 
 
-def manage_ports():
-    """Opens the port on which to listen, closing the previous if needed."""
-    cfg = hookenv.config()
-    if cfg.changed('port'):
-        hookenv.log('port updated from {} to {}'.format(
-            cfg.previous('port'), cfg['port']))
-        hookenv.close_port(cfg.previous('port'))
-    hookenv.open_port(cfg['port'])
-    build_config()
-
-
 def restart():
     """Restarts the jujushell service."""
     hookenv.status_set('maintenance', '(re)starting the jujushell service')
-    manage_ports()
+    build_config()
     call('systemctl', 'restart', 'jujushell.service')
     hookenv.status_set('active', 'jujushell started')
     set_state('jujushell.started')
@@ -158,9 +147,9 @@ def install_service():
     hookenv.status_set('maintenance', 'creating systemd module')
     templating.render(
         'jujushell.service', '/usr/lib/systemd/user/jujushell.service', {
-        'jujushell': os.path.join(FILES, 'jujushell'),
-        'jujushell_config': os.path.join(FILES, 'config.yaml'),
-    }, perms=775)
+            'jujushell': os.path.join(FILES, 'jujushell'),
+            'jujushell_config': os.path.join(FILES, 'config.yaml'),
+        }, perms=775)
     # Retrieve the jujushell binary resource.
     binary = os.path.join(FILES, 'jujushell')
     save_resource('jujushell', binary)
