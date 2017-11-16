@@ -47,7 +47,49 @@ def call(command, *args, **kwargs):
     hookenv.log('command {!r} succeeded: {!r}'.format(cmdline, output))
 
 
-def get_self_signed_cert():
+def build_config(cfg):
+    """Build and save the jujushell server config."""
+    def get_string(key):
+        value = cfg.get(key, '') or ''
+        return value.strip()
+
+    juju_addrs = get_string('juju-addrs') or os.getenv('JUJU_API_ADDRESSES')
+    if not juju_addrs:
+        raise ValueError('could not find API addresses')
+    juju_cert = get_string('juju-cert')
+    if juju_cert == 'from-unit':
+        juju_cert = _get_juju_cert(AGENT)
+    data = {
+        'juju-addrs': juju_addrs.split(),
+        'juju-cert': juju_cert,
+        'image-name': IMAGE_NAME,
+        'log-level': cfg['log-level'],
+        'port': cfg['port'],
+    }
+    if cfg['tls']:
+        cert, key = cfg['tls-cert'], cfg['tls-key']
+        if key != "" and cert != "":
+            key = base64.b64decode(key).decode('utf-8')
+            cert = base64.b64decode(cert).decode('utf-8')
+        else:
+            key, cert = _get_self_signed_cert()
+        data.update({'tls-cert': cert, 'tls-key': key})
+    with open(os.path.join(FILES, 'config.yaml'), 'w') as stream:
+        yaml.safe_dump(data, stream=stream)
+
+
+def _get_juju_cert(path):
+    """Return the certificate to use when connecting to the controller.
+
+    The certificate is provided in PEM format and it is retrieved by parsing
+    agent.conf.
+    """
+    with open(path) as stream:
+        return yaml.safe_load(stream)['cacert']
+
+
+def _get_self_signed_cert():
+    """Create and return a self signed TLS certificate."""
     subprocess.check_call([
         'openssl', 'req',
         '-x509',
@@ -66,63 +108,11 @@ def get_self_signed_cert():
     return key, cert
 
 
-def build_config():
-    """Build and save the jujushell server config."""
-    hookenv.log('building jujushell config.yaml')
-    cfg = hookenv.config()
-
-    def get_string(key):
-        value = cfg.get(key, '') or ''
-        return value.strip()
-
-    juju_addrs = get_string('juju-addrs') or os.getenv('JUJU_API_ADDRESSES')
-    if not juju_addrs:
-        raise ValueError('could not find API addresses')
-    juju_cert = get_string('juju-cert')
-    if juju_cert == 'from-unit':
-        juju_cert = get_juju_cert(AGENT)
-
-    tls = cfg['tls']
-    cert = cfg['tls-cert']
-    key = cfg['tls-key']
-
-    data = {
-        'juju-addrs': juju_addrs.split(),
-        'juju-cert': juju_cert,
-        'image-name': IMAGE_NAME,
-        'log-level': cfg['log-level'],
-        'port': cfg['port'],
-    }
-
-    if tls:
-        if key != "" and cert != "":
-            key = base64.b64decode(key).decode(encoding='UTF-8')
-            cert = base64.b64decode(cert).decode(encoding='UTF-8')
-        else:
-            key, cert = get_self_signed_cert()
-        data.update({
-            'tls-cert': cert,
-            'tls-key': key
-        })
-
-    with open(os.path.join(FILES, 'config.yaml'), 'w') as stream:
-        yaml.safe_dump(data, stream=stream)
-
-
-def get_juju_cert(path):
-    """Return the certificate to use when connecting to the controller.
-
-    The certificate is provided in PEM format and it is retrieved by parsing
-    agent.conf.
-    """
-    with open(path) as stream:
-        return yaml.safe_load(stream)['cacert']
-
-
 def restart():
     """Restarts the jujushell service."""
     hookenv.status_set('maintenance', '(re)starting the jujushell service')
-    build_config()
+    hookenv.log('building jujushell config.yaml before restarting service')
+    build_config(hookenv.config())
     call('systemctl', 'restart', 'jujushell.service')
     hookenv.status_set('active', 'jujushell started')
     set_state('jujushell.started')
@@ -159,7 +149,8 @@ def install_service():
     save_resource('jujushell', binary)
     os.chmod(binary, 0o775)
     # Build the configuration file for jujushell.
-    build_config()
+    hookenv.log('building jujushell config.yaml after installing service')
+    build_config(hookenv.config())
     # Enable the jujushell module.
     hookenv.status_set('maintenance', 'enabling systemd module')
     call('systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service')
