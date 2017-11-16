@@ -195,7 +195,7 @@ class TestBuildConfig(unittest.TestCase):
     def test_tls_generated_when_key_is_missing(self):
         # TLS keys are generated if only one key is provided, not both.
         self.make_cert()
-        with patch('subprocess.check_call') as mock_call:
+        with patch('subprocess.check_call'):
             jujushell.build_config({
                 'log-level': 'trace',
                 'port': 4247,
