@@ -97,6 +97,13 @@ class TestBuildConfig(unittest.TestCase):
         with open('files/config.yaml') as configfile:
             return yaml.safe_load(configfile)
 
+    def make_cert(self):
+        """Make a testing key pair in the current directory."""
+        with open('cert.pem', 'w') as certfile:
+            certfile.write('my cert')
+        with open('key.pem', 'w') as keyfile:
+            keyfile.write('my key')
+
     def test_no_tls(self):
         # The configuration file is created correctly without TLS.
         jujushell.build_config({
@@ -153,11 +160,7 @@ class TestBuildConfig(unittest.TestCase):
 
     def test_tls_generated(self):
         # TLS keys are generated if not provided.
-        # Create cert files used for tests.
-        with open('cert.pem', 'w') as certfile:
-            certfile.write('my cert')
-        with open('key.pem', 'w') as keyfile:
-            keyfile.write('my key')
+        self.make_cert()
         with patch('subprocess.check_call') as mock_call:
             jujushell.build_config({
                 'log-level': 'trace',
@@ -188,6 +191,28 @@ class TestBuildConfig(unittest.TestCase):
             '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
         # Key files has been removed.
         self.assertEqual(['files'], os.listdir('.'))
+
+    def test_tls_generated_when_key_is_missing(self):
+        # TLS keys are generated if only one key is provided, not both.
+        self.make_cert()
+        with patch('subprocess.check_call') as mock_call:
+            jujushell.build_config({
+                'log-level': 'trace',
+                'port': 4247,
+                'tls': True,
+                'tls-cert': base64.b64encode(b'provided cert'),
+                'tls-key': '',
+            })
+        expected_config = {
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'trace',
+            'port': 4247,
+            'tls-cert': 'my cert',
+            'tls-key': 'my key',
+        }
+        self.assertEqual(expected_config, self.get_config())
 
     def test_provided_juju_cert(self):
         # The configuration file is created with the provided Juju certificate.
