@@ -1,6 +1,6 @@
 DEBDEPS=python3-virtualenv
 SNAPDEPS=charm
-VENVDEPS=charmhelpers charms.reactive flake8
+VENVDEPS=charmhelpers charms.reactive coverage flake8 pyyaml
 
 VENV=.venv
 BIN=$(VENV)/bin
@@ -32,7 +32,9 @@ lint: $(PYTHON)
 
 .PHONY: test
 test: $(PYTHON)
-	@$(PYTHON) tests/test_jujushell.py -v
+	@$(BIN)/coverage run --source jujushell -m unittest discover -v -s tests/
+	@$(BIN)/coverage report -m
+	@rm .coverage
 
 .PHONY: sysdeps
 sysdeps:
