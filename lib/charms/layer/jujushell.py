@@ -48,15 +48,19 @@ def call(command, *args, **kwargs):
 
 
 def get_self_signed_cert():
-    subprocess.check_call(
-        ['openssl', 'req', '-x509', '-newkey', 'rsa:4096',
-         '-keyout', 'key.pem',
-         '-out', 'cert.pem',
-         '-days', '365',
-         '-nodes',
-         '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
-    key = open('key.pem').read()
-    cert = open('cert.pem').read()
+    subprocess.check_call([
+        'openssl', 'req',
+        '-x509',
+        '-newkey', 'rsa:4096',
+        '-keyout', 'key.pem',
+        '-out', 'cert.pem',
+        '-days', '365',
+        '-nodes',
+        '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
+    with open('key.pem') as keyfile:
+        key = keyfile.read()
+    with open('cert.pem') as certfile:
+        cert = certfile.read()
     os.remove('cert.pem')
     os.remove('key.pem')
     return key, cert
