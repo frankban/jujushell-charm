@@ -1,44 +1,144 @@
+import os
 from charmhelpers.core import (
     hookenv,
+    host,
 )
-from charms.layer import jujushell
+from charms import apt
+from charms.layer import (
+    jujushell,
+    snap,
+)
 from charms.reactive import (
     hook,
     only_once,
+    remove_state,
+    set_state,
     when,
+    when_not,
 )
 
 
 @hook('install')
-def install_service():
-    jujushell.install_service()
+def install():
+    set_state('jujushell.install')
+
+
+@hook('upgrade-charm')
+def upgrade_charm():
+    remove_state('jujushell.resource.available.jujushell')
+    remove_state('jujushell.resource.available.termserver')
+    remove_state('jujushell.lxd.image.imported.termserver')
+    set_state('jujushell.restart')
 
 
 @hook('start')
 def start():
-    jujushell.start()
+    set_state('jujushell.start')
 
 
 @hook('stop')
 def stop():
-    jujushell.stop()
+    remove_state('jujushell.start')
+
+
+@when('jujushell.install')
+@when_not('snap.installed.lxd')
+def install_lxd():
+    hookenv.status_set('maintenance', 'installing lxd')
+    snap.install('lxd')
+
+
+@when('jujushell.install')
+@when_not('apt.installed.zfsutils-linux')
+def install_zfsutils():
+    hookenv.status_set('maintenance', 'installing zfsutils-linux')
+    apt.queue_install(['zfsutils-linux'])
+
+
+@when('jujushell.install')
+@when_not('jujushell.resource.available.jujushell')
+def install_jujushell():
+    hookenv.status_set('maintenance', 'fetching jujushell')
+    try:
+        jujushell.save_resource('jujushell', jujushell.jujushell_path())
+        os.chmod(jujushell.jujushell_path(), 0o775)
+    except OSError:
+        hookenv.status_set('blocked', 'jujushell resource not available')
+
+
+@when('jujushell.install')
+@when_not('jujushell.resource.available.termserver')
+def install_termserver():
+    hookenv.status_set('maintenance', 'fetching termserver')
+    try:
+        jujushell.save_resource('termserver', jujushell.termserver_path())
+    except OSError:
+        hookenv.status_set('blocked', 'termserver resource not available')
+
+
+@when('jujushell.resource.available.jujushell')
+@when_not('jujushell.service.installed')
+def install_service():
+    jujushell.install_service()
 
 
 @when('snap.installed.lxd')
+@when('apt.installed.zfsutils-linux')
 @only_once
 def setup_lxd():
+    hookenv.status_set('maintenance', 'configuring lxd')
+    host.add_user_to_group('ubuntu', 'lxd')
     jujushell.setup_lxd()
+
+
+@when('jujushell.lxd.configured')
+@when_not('jujushell.lxd.image.imported.termserver')
+def import_image():
+    hookenv.status_set('maintenance', 'importing termserver image')
+    jujushell.import_lxd_image('termserver', jujushell.termserver_path())
+
+
+@when('jujushell.lxd.image.imported.termserver')
+@when('jujushell.resource.available.jujushell')
+@when('jujushell.service.installed')
+@when('jujushell.start')
+@when_not('jujushell.running')
+def start_service():
+    hookenv.status_set('maintenance', 'starting the jujushell service')
+    host.service_start('jujushell')
+    hookenv.status_set('active', 'jujushell running')
+    remove_state('jujushell.restart')
+    set_state('jujushell.running')
+
+
+@when('jujushell.lxd.image.imported.termserver')
+@when('jujushell.resource.available.jujushell')
+@when('jujushell.service.installed')
+@when('jujushell.restart')
+def restart_service():
+    hookenv.status_set('maintenance', 'starting the jujushell service')
+    host.service_restart('jujushell')
+    hookenv.status_set('active', 'jujushell running')
+    remove_state('jujushell.restart')
+
+
+@when('jujushell.running')
+@when_not('jujushell.start')
+def stop_service():
+    host.service_stop('jujushell')
+    remove_state('jujushell.running')
 
 
 @when('config.changed')
 def config_changed():
-    jujushell.config_changed()
+    jujushell.build_config()
+    set_state('jujushell.restart')
 
 
 @when('config.changed.port')
 def port_changed():
     config = hookenv.config()
-    hookenv.open_port(config('port'))
+    hookenv.open_port(config['port'])
     if config.previous('port'):
         hookenv.close_port(config.previous('port'))
 

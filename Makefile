@@ -1,6 +1,6 @@
 DEBDEPS=python3-virtualenv
 SNAPDEPS=charm
-VENVDEPS=charmhelpers charms.reactive coverage flake8 pyyaml
+VENVDEPS=charmhelpers charms.reactive coverage flake8 pylxd pyyaml
 
 VENV=.venv
 BIN=$(VENV)/bin
@@ -21,10 +21,12 @@ check: lint test
 
 .PHONY: clean
 clean:
-	rm -r $(VENV)
+	-rm -r $(VENV)
+	-rm -rf builds
+	-rm -rf deps
 
 .PHONY: devenv
-devenv: $(PYTHON)c
+devenv: $(PYTHON)
 
 .PHONY: lint
 lint: $(PYTHON)
