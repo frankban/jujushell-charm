@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import (
     call,
+    Mock,
     patch,
 )
 
@@ -85,9 +86,8 @@ class TestBuildConfig(unittest.TestCase):
         # Also make charm files live in the temp dir.
         files = os.path.join(directory, 'files')
         os.mkdir(files)
-        files_patcher = patch('jujushell.FILES', files)
-        files_patcher.start()
-        self.addCleanup(files_patcher.stop)
+        os.environ['CHARM_DIR'] = directory
+        self.addCleanup(os.environ.pop, 'CHARM_DIR')
         # Add juju addresses as an environment variable.
         os.environ['JUJU_API_ADDRESSES'] = '1.2.3.4:17070 4.3.2.1:17070'
         self.addCleanup(os.environ.pop, 'JUJU_API_ADDRESSES')
@@ -234,16 +234,15 @@ class TestBuildConfig(unittest.TestCase):
     def test_juju_cert_from_agent_file(self):
         # A Juju certificate can be retrieved from the agent file in the unit.
         # Make agent file live in the temp dir.
-        agent = os.path.join(jujushell.FILES, 'agent.conf')
+        agent = os.path.join(os.environ['CHARM_DIR'], '..', 'agent.conf')
         with open(agent, 'w') as agentfile:
             yaml.safe_dump({'cacert': 'agent cert'}, agentfile)
-        with patch('jujushell.AGENT', agent):
-            jujushell.build_config({
-                'log-level': 'info',
-                'juju-cert': 'from-unit',
-                'port': 4247,
-                'tls': False,
-            })
+        jujushell.build_config({
+            'log-level': 'info',
+            'juju-cert': 'from-unit',
+            'port': 4247,
+            'tls': False,
+        })
         expected_config = {
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
@@ -315,6 +314,90 @@ class TestSaveResource(unittest.TestCase):
         # The original resource file is no more.
         self.assertFalse(os.path.isfile(resource))
         mock_get.assert_called_once_with('myresource')
+
+
+@patch('charmhelpers.core.hookenv.log')
+class TestImportLXDImage(unittest.TestCase):
+
+    def setUp(self):
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory)
+        self.path = os.path.join(directory, 'image')
+        with open(self.path, 'wb') as f:
+            f.write(b'AAAAAAAAAA')
+
+    def test_no_images(self, mock_log):
+        with patch('jujushell._lxd_client') as mock_client:
+            mock_client().images.all.return_value = ()
+            jujushell.import_lxd_image('test', self.path)
+        mock_client().images.create.assert_called_once_with(
+            b'AAAAAAAAAA',
+            wait=True)
+        mock_client().images.create().add_alias.assert_called_once_with(
+            'test',
+            '')
+
+    def test_image_exists(self, mock_log):
+        image = Mock()
+        image.fingerprint = \
+            '1d65bf29403e4fb1767522a107c827b8884d16640cf0e3b18c4c1dd107e0d49d'
+        image.aliases = [{'name': 'test', 'description': ''}]
+        with patch('jujushell._lxd_client') as mock_client:
+            mock_client().images.all.return_value = [image]
+            jujushell.import_lxd_image('test', self.path)
+        mock_client().images.create.assert_not_called()
+
+    def test_image_exists_no_alias(self, mock_log):
+        image = Mock()
+        image.fingerprint = \
+            '1d65bf29403e4fb1767522a107c827b8884d16640cf0e3b18c4c1dd107e0d49d'
+        image.aliases = []
+        with patch('jujushell._lxd_client') as mock_client:
+            mock_client().images.all.return_value = [image]
+            jujushell.import_lxd_image('test', self.path)
+        mock_client().images.create.assert_not_called()
+        image.add_alias.assert_called_once_with('test', '')
+
+    def test_image_with_alias_exists(self, mock_log):
+        image = Mock()
+        image.fingerprint = \
+            '2d65bf29403e4fb1767522a107c827b8884d16640cf0e3b18c4c1dd107e0d49d'
+        image.aliases = [{'name': 'test', 'description': ''}]
+        with patch('jujushell._lxd_client') as mock_client:
+            mock_client().images.all.return_value = [image]
+            jujushell.import_lxd_image('test', self.path)
+        mock_client().images.create.assert_called_once_with(
+            b'AAAAAAAAAA',
+            wait=True)
+        mock_client().images.create().add_alias.assert_called_once_with(
+            'test',
+            '')
+        image.delete_alias.assert_called_once_with('test')
+
+
+@patch('charmhelpers.core.hookenv.log')
+class TestSetupLXD(unittest.TestCase):
+
+    def test_not_initialized(self, mock_log):
+        with patch('jujushell._lxd_client') as mock_client:
+            mock_client().networks.all.return_value = ()
+            with patch('jujushell.call') as mock_call:
+                jujushell.setup_lxd()
+        self.assertEqual(2, mock_call.call_count)
+        mock_call.assert_has_calls([
+            call(jujushell._LXD_INIT_COMMAND, shell=True, cwd='/'),
+            call(jujushell._LXD_WAIT_COMMAND, shell=True, cwd='/'),
+        ])
+
+    def test_initialized(self, mock_log):
+        with patch('jujushell._lxd_client') as mock_client:
+            net = Mock()
+            net.name = 'jujushellbr0'
+            mock_client().networks.all.return_value = [net]
+            with patch('jujushell.call') as mock_call:
+                jujushell.setup_lxd()
+        mock_call.assert_called_once_with(
+            jujushell._LXD_WAIT_COMMAND, shell=True, cwd='/')
 
 
 if __name__ == '__main__':

@@ -1,25 +1,42 @@
 import base64
+import hashlib
 import os
 import pipes
 import subprocess
-import time
+from urllib import parse
 
 from charmhelpers.core import (
     hookenv,
     templating,
 )
 from charms.reactive import (
-    remove_state,
     set_state,
 )
+import pylxd
 import yaml
 
 
-CURDIR = os.getcwd()
-FILES = os.path.join(CURDIR, 'files')
-AGENT = os.path.join(CURDIR, '..', 'agent.conf')
 IMAGE_NAME = 'termserver'
-LXC = '/snap/bin/lxc'
+
+
+def agent_path():
+    """Get the location for the unit's agent file."""
+    return os.path.join(hookenv.charm_dir(), '..', 'agent.conf')
+
+
+def config_path():
+    """Get the location for the configuration file."""
+    return os.path.join(hookenv.charm_dir(), 'files', 'config.yaml')
+
+
+def jujushell_path():
+    """Get the location for the jujushell binary."""
+    return os.path.join(hookenv.charm_dir(), 'files', 'jujushell')
+
+
+def termserver_path():
+    """Get the location for the termserver image."""
+    return '/var/tmp/termserver.tar.gz'
 
 
 def call(command, *args, **kwargs):
@@ -58,7 +75,8 @@ def build_config(cfg):
         raise ValueError('could not find API addresses')
     juju_cert = get_string('juju-cert')
     if juju_cert == 'from-unit':
-        juju_cert = _get_juju_cert(AGENT)
+        juju_cert = _get_juju_cert(agent_path())
+
     data = {
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
@@ -74,7 +92,7 @@ def build_config(cfg):
         else:
             key, cert = _get_self_signed_cert()
         data.update({'tls-cert': cert, 'tls-key': key})
-    with open(os.path.join(FILES, 'config.yaml'), 'w') as stream:
+    with open(config_path(), 'w') as stream:
         yaml.safe_dump(data, stream=stream)
 
 
@@ -108,18 +126,6 @@ def _get_self_signed_cert():
     return key, cert
 
 
-def restart():
-    """Restarts the jujushell service."""
-    hookenv.status_set('maintenance', '(re)starting the jujushell service')
-    hookenv.log('building jujushell config.yaml before restarting service')
-    build_config(hookenv.config())
-    call('systemctl', 'restart', 'jujushell.service')
-    hookenv.status_set('active', 'jujushell started')
-    set_state('jujushell.started')
-    remove_state('jujushell.stopped')
-    hookenv.status_set('active', 'jujushell is ready')
-
-
 def save_resource(name, path):
     """Retrieve a resource with the given name and save it in the given path.
 
@@ -133,6 +139,7 @@ def save_resource(name, path):
         raise OSError(msg)
     os.rename(resource, path)
     hookenv.log('resource {!r} saved at {!r}'.format(name, path))
+    set_state('jujushell.resource.available.{}'.format(name))
 
 
 def install_service():
@@ -141,13 +148,9 @@ def install_service():
     hookenv.status_set('maintenance', 'creating systemd module')
     templating.render(
         'jujushell.service', '/usr/lib/systemd/user/jujushell.service', {
-            'jujushell': os.path.join(FILES, 'jujushell'),
-            'jujushell_config': os.path.join(FILES, 'config.yaml'),
+            'jujushell': jujushell_path(),
+            'jujushell_config': config_path(),
         }, perms=775)
-    # Retrieve the jujushell binary resource.
-    binary = os.path.join(FILES, 'jujushell')
-    save_resource('jujushell', binary)
-    os.chmod(binary, 0o775)
     # Build the configuration file for jujushell.
     hookenv.log('building jujushell config.yaml after installing service')
     build_config(hookenv.config())
@@ -155,62 +158,70 @@ def install_service():
     hookenv.status_set('maintenance', 'enabling systemd module')
     call('systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service')
     call('systemctl', 'daemon-reload')
-    set_state('jujushell.installed')
+    set_state('jujushell.service.installed')
     hookenv.status_set('maintenance', 'jujushell installed')
+
+
+def import_lxd_image(name, path):
+    """Import the image with the given name from the given path into lxd."""
+    # Load the whole file into memory as this is necessary when creating the
+    # image.
+    with open(path, 'rb') as f:
+        data = f.read()
+    h = hashlib.sha256()
+    h.update(data)
+    fingerprint = h.hexdigest()
+    hookenv.log('{} has fingerprint {}'.format(path, fingerprint))
+
+    client = _lxd_client()
+    image = None
+    alias = None
+    for img in client.images.all():
+        if img.fingerprint == fingerprint:
+            hookenv.log('image {} already exists'.format(fingerprint))
+            image = img
+        for al in img.aliases:
+            if al.get('name') == name:
+                hookenv.log('alias {} currently refers to image {}'.format(
+                    name,
+                    img.fingerprint))
+                alias = img
+    if image is None:
+        hookenv.status_set('maintenance',
+                           'importing image {}'.format(fingerprint))
+        image = client.images.create(data, wait=True)
+    if alias is None:
+        image.add_alias(name, '')
+    elif alias.fingerprint != fingerprint:
+        alias.delete_alias(name)
+        image.add_alias(name, '')
+    set_state('jujushell.lxd.image.imported.{}'.format(name))
+
+
+def _lxd_client():
+    """Get a client connection to the LXD server."""
+    return pylxd.client.Client('http+unix://{}'.format(
+        parse.quote(_LXD_SOCKET, safe='')))
+
+
+_LXD_SOCKET = '/var/snap/lxd/common/lxd/unix.socket'
 
 
 def setup_lxd():
     """Configure LXD."""
-    hookenv.status_set('maintenance', 'configuring group membership')
-    call('adduser', 'ubuntu', 'lxd')
-
     # When running LXD commands, use a working directory that's surely
     # available also from the perspective of confined LXD.
     cwd = '/'
-
-    try:
-        call(LXC, 'network', 'show', 'jujushellbr0', cwd=cwd)
-    except OSError:
-        # LXD is not yet initialized.
-        hookenv.status_set('maintenance', 'setting up LXD')
-        # Wait for the LXD daemon to be up and running.
-        # TODO: we can do better than time.sleep().
-        time.sleep(10)
+    client = _lxd_client()
+    initialized = False
+    for net in client.networks.all():
+        if net.name == 'jujushellbr0':
+            initialized = True
+            break
+    if not initialized:
         call(_LXD_INIT_COMMAND, shell=True, cwd=cwd)
-        hookenv.log('lxd initialized')
-    else:
-        hookenv.log('lxd already initialized')
-
-    try:
-        call(LXC, 'image', 'show', 'termserver', cwd=cwd)
-    except OSError:
-        # The image has not been imported yet.
-        hookenv.status_set('maintenance', 'fetching LXD image')
-        image = '/tmp/termserver.tar.gz'
-        save_resource('termserver', image)
-        hookenv.status_set('maintenance', 'importing LXD image')
-        # Use the stdin trick to work around weird LXD confinement.
-        call('{} image import /dev/stdin --alias termserver < {}'.format(
-            LXC, image), shell=True, cwd=cwd)
-        hookenv.log('lxd image imported')
-    else:
-        hookenv.log('lxd image already imported')
-    hookenv.status_set('maintenance', 'LXD set up completed')
-
-
-def start():
-    restart()
-
-
-def config_changed():
-    restart()
-
-
-def stop():
-    """Stops the jujushell service."""
-    call('systemctl', 'stop', 'jujushell.service')
-    remove_state('jujushell.started')
-    set_state('jujushell.stopped')
+    call(_LXD_WAIT_COMMAND, shell=True, cwd=cwd)
+    set_state('jujushell.lxd.configured')
 
 
 # Define the command used to initialize LXD.
@@ -239,3 +250,5 @@ profiles:
       type: nic
 EOF
 """
+
+_LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'

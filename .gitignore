@@ -106,3 +106,4 @@ ENV/
 # charm build
 builds/
 deps/
+.unit-state.db
