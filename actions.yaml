@@ -1,0 +1,2 @@
+exterminate-containers:
+  description: Remove all containers running on the jujushell service
