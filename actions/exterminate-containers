@@ -1,21 +1,20 @@
 #!/usr/bin/env python
 
-import pylxd
 from urllib import parse
 
+import pylxd
 
 # XXX jcsackett 2017-11-21 This reproduces a lot of code from lib...jujushell
 # We should probably figure out how to use the mechanism reactive uses to
 # expose that code to reactive/jujushell.py, but for now this works as that
 # code isn't available in actions.
 
-
 _LXD_SOCKET = '/var/snap/lxd/common/lxd/unix.socket'
 
 
-if __name__=="__main__":
-    client = pylxd.client.Client('http+unix://{}'.format(
-        parse.quote(_LXD_SOCKET, safe='')))
-    for c in client.containers.all():
-        c.stop()
-        c.delete()
+if __name__ == '__main__':
+    client = pylxd.client.Client(
+        'http+unix://{}'.format(parse.quote(_LXD_SOCKET, safe='')))
+    for container in client.containers.all():
+        container.stop()
+        container.delete()
