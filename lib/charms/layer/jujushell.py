@@ -248,6 +248,14 @@ profiles:
       nictype: bridged
       parent: jujushellbr0
       type: nic
+- name: termserver
+- name: termserver-limited
+  config:
+    user.user-data: |
+      #cloud-config
+      users:
+      - name: ubuntu
+        shell: /bin/bash
 EOF
 """
 
