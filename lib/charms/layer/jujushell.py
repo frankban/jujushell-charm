@@ -260,3 +260,13 @@ EOF
 """
 
 _LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
+
+
+def exterminate_containers():
+    client = _lxd_client()
+    for container in client.containers.all():
+        # XXX j.c.sackett 2017-11-28 When the pylxd version in the repos is
+        # 2.2.4 we can replace the suprocess call with calls to
+        # container.stop(wait=True) and container.delete()
+        subprocess.check_call(
+            ['/snap/bin/lxc', 'delete', '-f', container.name])
