@@ -108,15 +108,14 @@ def _get_juju_cert(path):
 
 def _get_self_signed_cert():
     """Create and return a self signed TLS certificate."""
-    subprocess.check_call([
-        'openssl', 'req',
-        '-x509',
-        '-newkey', 'rsa:4096',
-        '-keyout', 'key.pem',
-        '-out', 'cert.pem',
-        '-days', '365',
-        '-nodes',
-        '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
+    call('openssl', 'req',
+         '-x509',
+         '-newkey', 'rsa:4096',
+         '-keyout', 'key.pem',
+         '-out', 'cert.pem',
+         '-days', '365',
+         '-nodes',
+         '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0')
     with open('key.pem') as keyfile:
         key = keyfile.read()
     with open('cert.pem') as certfile:
@@ -260,3 +259,12 @@ EOF
 """
 
 _LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
+
+
+def exterminate_containers():
+    client = _lxd_client()
+    for container in client.containers.all():
+        # XXX j.c.sackett 2017-11-28 When the pylxd version in the repos is
+        # 2.2.4 we can replace the suprocess call with calls to
+        # container.stop(wait=True) and container.delete()
+        call('/snap/bin/lxc', 'delete', '-f', container.name)
