@@ -161,7 +161,7 @@ class TestBuildConfig(unittest.TestCase):
     def test_tls_generated(self):
         # TLS keys are generated if not provided.
         self.make_cert()
-        with patch('subprocess.check_call') as mock_call:
+        with patch('jujushell.call') as mock_call:
             jujushell.build_config({
                 'log-level': 'trace',
                 'port': 4247,
@@ -180,7 +180,7 @@ class TestBuildConfig(unittest.TestCase):
         }
         self.assertEqual(expected_config, self.get_config())
         # The right command has been executed.
-        mock_call.assert_called_once_with([
+        mock_call.assert_called_once_with(
             'openssl', 'req',
             '-x509',
             '-newkey', 'rsa:4096',
@@ -188,14 +188,14 @@ class TestBuildConfig(unittest.TestCase):
             '-out', 'cert.pem',
             '-days', '365',
             '-nodes',
-            '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0'])
+            '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0')
         # Key files has been removed.
         self.assertEqual(['files'], os.listdir('.'))
 
     def test_tls_generated_when_key_is_missing(self):
         # TLS keys are generated if only one key is provided, not both.
         self.make_cert()
-        with patch('subprocess.check_call'):
+        with patch('jujushell.call'):
             jujushell.build_config({
                 'log-level': 'trace',
                 'port': 4247,
