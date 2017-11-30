@@ -3,6 +3,7 @@ includes:
     - 'layer:apt'
     - 'layer:snap'
     - 'interface:http'
+    - 'interface:prometheus'
 repo: https://github.com/CanonicalLtd/juju-shell-charm
 options:
     basic:

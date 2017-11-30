@@ -152,3 +152,16 @@ def website_available(website):
 @when('config.changed.port')
 def website_port_changed(website):
     website_available(website)
+
+@when('prometheus.available')
+@when_not('prometheus.configured')
+def prometheus_available(prometheus):
+    prometheus.configure(port=hookenv.config('port'))
+    set_state('prometheus.configured')
+
+
+@when_not('prometheus.available')
+@when('prometheus.configured')
+def prometheus_unavailable():
+    remove_state('prometheus.configured')
+
