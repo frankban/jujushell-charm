@@ -21,7 +21,7 @@ check: lint test
 
 .PHONY: clean
 clean:
-	-rm -r $(VENV)
+	-rm -rf $(VENV)
 	-rm -rf builds
 	-rm -rf deps
 
