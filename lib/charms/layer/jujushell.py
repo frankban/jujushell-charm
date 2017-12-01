@@ -16,7 +16,9 @@ import pylxd
 import yaml
 
 
+# Define the LXD image name and profiles to use when launching instances.
 IMAGE_NAME = 'termserver'
+PROFILE_DEFAULT, PROFILE_TERMSERVER = 'default', 'termserver-limited'
 
 
 def agent_path():
@@ -83,6 +85,7 @@ def build_config(cfg):
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
         'port': cfg['port'],
+        'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
         cert, key = cfg['tls-cert'], cfg['tls-key']
@@ -236,7 +239,7 @@ storage_pools:
 - name: data
   driver: zfs
 profiles:
-- name: default
+- name: {default}
   devices:
     root:
       path: /
@@ -247,8 +250,7 @@ profiles:
       nictype: bridged
       parent: jujushellbr0
       type: nic
-- name: termserver
-- name: termserver-limited
+- name: {termserver}
   config:
     user.user-data: |
       #cloud-config
@@ -256,8 +258,7 @@ profiles:
       - name: ubuntu
         shell: /bin/bash
 EOF
-"""
-
+""".format(default=PROFILE_DEFAULT, termserver=PROFILE_TERMSERVER)
 _LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
 
 

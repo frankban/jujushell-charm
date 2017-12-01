@@ -153,6 +153,7 @@ def website_available(website):
 def website_port_changed(website):
     website_available(website)
 
+
 @when('prometheus.available')
 @when_not('prometheus.configured')
 def prometheus_available(prometheus):
@@ -164,4 +165,3 @@ def prometheus_available(prometheus):
 @when('prometheus.configured')
 def prometheus_unavailable():
     remove_state('prometheus.configured')
-

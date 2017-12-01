@@ -117,6 +117,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 
@@ -135,6 +136,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 80,
+            'profiles': ['default', 'termserver-limited'],
             'tls-cert': 'provided cert',
             'tls-key': 'provided key',
         }
@@ -155,6 +157,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 80,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 
@@ -175,6 +178,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'trace',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
             'tls-cert': 'my cert',
             'tls-key': 'my key',
         }
@@ -209,6 +213,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'trace',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
             'tls-cert': 'my cert',
             'tls-key': 'my key',
         }
@@ -228,6 +233,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': 'provided cert',
             'log-level': 'info',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 
@@ -249,6 +255,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': 'agent cert',
             'log-level': 'info',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 
@@ -266,6 +273,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 
