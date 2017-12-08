@@ -105,7 +105,7 @@ def update_lxc_quotas(cfg):
     call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.memory',
          _get_string(cfg, 'lxc-quota-ram'))
     call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.processes',
-         _get_string(cfg, 'lxc-quota-cpu-processes'))
+         _get_string(cfg, 'lxc-quota-processes'))
 
 
 def _get_string(cfg, key):
