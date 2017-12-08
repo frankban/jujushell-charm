@@ -68,7 +68,8 @@ def call(command, *args, **kwargs):
 
 def build_config(cfg):
     """Build and save the jujushell server config."""
-    juju_addrs = _get_string(cfg, 'juju-addrs') or os.getenv('JUJU_API_ADDRESSES')
+    juju_addrs = _get_string(cfg, 'juju-addrs') or \
+        os.getenv('JUJU_API_ADDRESSES')
     if not juju_addrs:
         raise ValueError('could not find API addresses')
     juju_cert = _get_string(cfg, 'juju-cert')
@@ -100,7 +101,8 @@ def update_lxc_quotas(cfg):
     config."""
     call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.cpu',
          _get_string(cfg, 'lxc-quota-cpu-cores'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.cpu.allowance',
+    call('/snap/bin/lxc', 'profile', 'set', 'default',
+         'limits.cpu.allowance',
          _get_string(cfg, 'lxc-quota-cpu-allowance'))
     call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.memory',
          _get_string(cfg, 'lxc-quota-ram'))
