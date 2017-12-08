@@ -28,31 +28,15 @@ options:
         type: string
         default: ''
         description: |
-            The TLS certificate, if any. If tls is true and none is provided the
-            charm will use a self signed key.
+          The TLS certificate, if any. If tls is true and none is provided the
+          charm will use a self signed key.
     tls-key:
         type: string
         default: ''
         description: |
-            The TLS key, if any. If tls is true and none is provided the charm
-            will use a self signed key.
+          The TLS key, if any. If tls is true and none is provided the charm
+          will use a self signed key.
     tls:
         type: boolean
         default: true
         description: Whether or not to serve jujushell behind TLS.
-    lxc-quota-ram:
-        type: string
-        default: 256MB
-        description: Memory quota for LXCs (supports kB, MB, GB, TB, PB and EB suffixes).
-    lxc-quota-cpu-cores:
-        type: int
-        default: 1
-        description: CPU quota for LXCs (cores).
-    lxc-quota-cpu-allowance:
-        type: string
-        default: 100%
-        description: "How much of the CPU can be used (percentage, or chunk of time, e.g: 25ms/100ms)."
-    lxc-quota-processes:
-        type: int
-        default: 200
-        description: Process quota for LXCs (processes).
