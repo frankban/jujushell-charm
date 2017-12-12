@@ -67,10 +67,34 @@ class TestCall(unittest.TestCase):
             "command 'no-such-command' not found: [Errno 2] "
             "No such file or directory: 'no-such-command'"
         )
-        self.assertEqual(expected_error, str(ctx.exception))
+        self.assertTrue(str(ctx.exception).startswith(expected_error))
         mock_log.assert_has_calls([
             call("running the following: 'no-such-command'"),
         ])
+
+
+class TestUpdateLXCQuotas(unittest.TestCase):
+
+    def test_update_lxc_quotas(self):
+        cfg = {
+            'lxc-quota-cpu-cores': 1,
+            'lxc-quota-cpu-allowance': '100%',
+            'lxc-quota-ram': '256MB',
+            'lxc-quota-processes': 100,
+        }
+        with patch('jujushell.call') as mock_call:
+            jujushell.update_lxc_quotas(cfg)
+        mock_call.assert_has_calls([
+            call('/snap/bin/lxc', 'profile', 'set', 'default',
+                 'limits.cpu', '1'),
+            call('/snap/bin/lxc', 'profile', 'set', 'default',
+                 'limits.cpu.allowance', '100%'),
+            call('/snap/bin/lxc', 'profile', 'set', 'default',
+                 'limits.memory', '256MB'),
+            call('/snap/bin/lxc', 'profile', 'set', 'default',
+                 'limits.processes', '100'),
+        ])
+        self.assertEqual(mock_call.call_count, 4)
 
 
 class TestBuildConfig(unittest.TestCase):
