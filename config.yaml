@@ -51,8 +51,8 @@ options:
     lxc-quota-cpu-allowance:
         type: string
         default: 100%
-        description: "How much of the CPU can be used (percentage, or chunk of time, e.g: 25ms/100ms)."
+        description: How much of the CPU can be used (percentage, or chunk of time, e.g. 25ms/100ms).
     lxc-quota-processes:
         type: int
         default: 200
-        description: Process quota for LXCs (processes).
+        description: Number of processes allowed inside LXD containers.

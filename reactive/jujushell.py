@@ -131,8 +131,9 @@ def stop_service():
 
 @when('config.changed')
 def config_changed():
-    jujushell.build_config(hookenv.config())
-    jujushell.update_lxc_quotas(hookenv.config())
+    config = hookenv.config()
+    jujushell.build_config(config)
+    jujushell.update_lxc_quotas(config)
     set_state('jujushell.restart')
 
 

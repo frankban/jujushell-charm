@@ -68,8 +68,8 @@ def call(command, *args, **kwargs):
 
 def build_config(cfg):
     """Build and save the jujushell server config."""
-    juju_addrs = _get_string(cfg, 'juju-addrs') or \
-        os.getenv('JUJU_API_ADDRESSES')
+    juju_addrs = (_get_string(cfg, 'juju-addrs') or
+                  os.getenv('JUJU_API_ADDRESSES'))
     if not juju_addrs:
         raise ValueError('could not find API addresses')
     juju_cert = _get_string(cfg, 'juju-cert')
@@ -275,8 +275,6 @@ profiles:
         shell: /bin/bash
 EOF
 """.format(default=PROFILE_DEFAULT, termserver=PROFILE_TERMSERVER)
-
-
 _LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
 
 

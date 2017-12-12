@@ -94,6 +94,7 @@ class TestUpdateLXCQuotas(unittest.TestCase):
             call('/snap/bin/lxc', 'profile', 'set', 'default',
                  'limits.processes', '100'),
         ])
+        self.assertEqual(mock_call.call_count, 4)
 
 
 class TestBuildConfig(unittest.TestCase):
