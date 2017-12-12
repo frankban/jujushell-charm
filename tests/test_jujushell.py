@@ -50,15 +50,12 @@ class TestCall(unittest.TestCase):
         # An OSError is raise when the command fails.
         with self.assertRaises(OSError) as ctx:
             jujushell.call('ls', 'no-such-file')
-        expected_error = (
-            'command \'ls no-such-file\' failed with retcode 2: '
-            '"ls: cannot access \'no-such-file\': '
-            'No such file or directory\\n"'
-        )
-        self.assertEqual(expected_error, str(ctx.exception))
+        expected_error = 'command \'ls no-such-file\' failed with retcode 2:'
+        obtained_error = str(ctx.exception)
+        self.assertTrue(obtained_error.startswith(expected_error))
         mock_log.assert_has_calls([
             call("running the following: 'ls no-such-file'"),
-            call(expected_error),
+            call(obtained_error),
         ])
 
     def test_invalid_command(self, mock_log):
