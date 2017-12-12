@@ -4,7 +4,7 @@ includes:
     - 'layer:snap'
     - 'interface:http'
     - 'interface:prometheus'
-repo: https://github.com/CanonicalLtd/juju-shell-charm
+repo: https://github.com/juju/jujushell-charm
 options:
     basic:
         packages:
