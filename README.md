@@ -1,6 +1,6 @@
-# juju-shell
+# jujushell charm
 
-A charm for allowing access to the Juju CLI through WebSocket connections.
+A Juju charm for allowing access to the Juju CLI through WebSocket connections.
 
 ## States
 
