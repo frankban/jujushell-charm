@@ -166,7 +166,7 @@ class TestBuildConfig(unittest.TestCase):
         }
         self.assertEqual(expected_config, self.get_config())
 
-    def test_tls_provided_but_not_enabled(self):
+    def test_tls_keys_provided_but_tls_not_enabled(self):
         # Provided TLS keys are ignored when security is not enabled.
         jujushell.build_config({
             'log-level': 'debug',
@@ -181,6 +181,24 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 80,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+
+    def test_dns_name_provided_but_tls_not_enabled(self):
+        # The provided DNS name is ignored when security is not enabled.
+        jujushell.build_config({
+            'dns-name': 'shell.example.com',
+            'log-level': 'debug',
+            'port': 8080,
+            'tls': False,
+        })
+        expected_config = {
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 8080,
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
@@ -240,6 +258,46 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
             'tls-cert': 'my cert',
             'tls-key': 'my key',
+        }
+        self.assertEqual(expected_config, self.get_config())
+
+    def test_dns_name_provided(self):
+        # The DNS name is propagated to the service when provided.
+        jujushell.build_config({
+            'dns-name': 'shell.example.com',
+            'log-level': 'debug',
+            'port': 443,
+            'tls': True,
+        })
+        expected_config = {
+            'dns-name': 'shell.example.com',
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 443,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+
+    def test_tls_keys_ignored_when_dns_name_provided(self):
+        # The TLS keys and port options are ignored when a DNS name is set.
+        jujushell.build_config({
+            'dns-name': 'example.com',
+            'log-level': 'debug',
+            'port': 80,
+            'tls': True,
+            'tls-cert': base64.b64encode(b'provided cert'),
+            'tls-key': base64.b64encode(b'provided key'),
+        })
+        expected_config = {
+            'dns-name': 'example.com',
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 443,
+            'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
 

@@ -71,8 +71,9 @@ def call(command, *args, **kwargs):
 
 def build_config(cfg):
     """Build and save the jujushell server config."""
-    juju_addrs = (_get_string(cfg, 'juju-addrs') or
-                  os.getenv('JUJU_API_ADDRESSES'))
+    juju_addrs = (
+        _get_string(cfg, 'juju-addrs') or
+        os.getenv('JUJU_API_ADDRESSES'))
     if not juju_addrs:
         raise ValueError('could not find API addresses')
     juju_cert = _get_string(cfg, 'juju-cert')
@@ -88,15 +89,27 @@ def build_config(cfg):
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
-        cert, key = cfg['tls-cert'], cfg['tls-key']
-        if key != "" and cert != "":
-            key = base64.b64decode(key).decode('utf-8')
-            cert = base64.b64decode(cert).decode('utf-8')
-        else:
-            key, cert = _get_self_signed_cert()
-        data.update({'tls-cert': cert, 'tls-key': key})
+        data.update(_build_tls_config(cfg))
     with open(config_path(), 'w') as stream:
         yaml.safe_dump(data, stream=stream)
+
+
+def _build_tls_config(cfg):
+    """Return jujushell server config related to TLS."""
+    dns_name = _get_string(cfg, 'dns-name')
+    if dns_name:
+        # Let's Encrypt requires port 443.
+        return {'dns-name': dns_name, 'port': 443}
+    cert, key = cfg['tls-cert'], cfg['tls-key']
+    if cert != "" and key != "":
+        # Keys have been provided as options.
+        return {
+            'tls-cert': base64.b64decode(cert).decode('utf-8'),
+            'tls-key': base64.b64decode(key).decode('utf-8'),
+        }
+    # Automatically generate a self-signed certificate.
+    key, cert = _get_self_signed_cert()
+    return {'tls-cert': cert, 'tls-key': key}
 
 
 def update_lxc_quotas(cfg):
