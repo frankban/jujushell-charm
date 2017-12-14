@@ -145,18 +145,6 @@ def config_changed():
     set_state('jujushell.restart')
 
 
-@when('config.changed.port')
-def port_changed():
-    config = hookenv.config()
-    current = jujushell.get_port(config)
-    # TODO: it's very unfortunate that charm helpers do not allow to get the
-    # previous config as a dict.
-    previous = jujushell.get_port(config._prev_dict or {})
-    hookenv.open_port(current)
-    if previous and previous != current:
-        hookenv.close_port(previous)
-
-
 @when('website.available')
 def website_available(website):
     config = hookenv.config()

@@ -80,12 +80,21 @@ def build_config(cfg):
     if juju_cert == 'from-unit':
         juju_cert = _get_juju_cert(agent_path())
 
+    current_port = get_port(cfg)
+    # TODO: it's very unfortunate that charm helpers do not allow to get the
+    # previous config as a dict.
+    previous_cfg = getattr(cfg, '_prev_dict', {}) or {}
+    previous_port = get_port(previous_cfg)
+    hookenv.open_port(current_port)
+    if previous_port and previous_port != current_port:
+        hookenv.close_port(previous_port)
+
     data = {
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
-        'port': get_port(cfg),
+        'port': current_port,
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
