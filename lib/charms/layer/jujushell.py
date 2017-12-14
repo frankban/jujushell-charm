@@ -85,7 +85,7 @@ def build_config(cfg):
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
-        'port': cfg['port'],
+        'port': get_port(cfg),
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
@@ -98,8 +98,8 @@ def _build_tls_config(cfg):
     """Return jujushell server config related to TLS."""
     dns_name = _get_string(cfg, 'dns-name')
     if dns_name:
-        # Let's Encrypt requires port 443.
-        return {'dns-name': dns_name, 'port': 443}
+        # Let's Encrypt is used for managing certificates.
+        return {'dns-name': dns_name}
     cert, key = cfg['tls-cert'], cfg['tls-key']
     if cert != "" and key != "":
         # Keys have been provided as options.
@@ -110,6 +110,11 @@ def _build_tls_config(cfg):
     # Automatically generate a self-signed certificate.
     key, cert = _get_self_signed_cert()
     return {'tls-cert': cert, 'tls-key': key}
+
+
+def get_port(cfg):
+    """Return the port to use for exposing the jujushell service."""
+    return 443 if cfg['tls'] and _get_string(cfg, 'dns-name') else cfg['port']
 
 
 def update_lxc_quotas(cfg):

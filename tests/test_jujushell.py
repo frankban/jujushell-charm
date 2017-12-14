@@ -371,6 +371,37 @@ class TestBuildConfig(unittest.TestCase):
         self.assertEqual('could not find API addresses', str(ctx.exception))
 
 
+class TestGetPort(unittest.TestCase):
+
+    def test_with_dns_name(self):
+        # Port 443 is returned if a DNS name has been provided.
+        port = jujushell.get_port({
+            'dns-name': 'example.com', 'port': 4247, 'tls': True})
+        self.assertEqual(443, port)
+
+    def test_with_invalid_dns_name(self):
+        # The DNS name is ignored if not valid.
+        port = jujushell.get_port({'dns-name': ' ', 'port': 4247, 'tls': True})
+        self.assertEqual(4247, port)
+
+    def test_without_dns_name(self):
+        # The port specified in the config is returned if no DNS name is set.
+        port = jujushell.get_port({'port': 8000, 'tls': True})
+        self.assertEqual(8000, port)
+
+    def test_without_dns_name_no_tls(self):
+        # The port specified in the config is returned if security is disabled.
+        port = jujushell.get_port({'port': 8080, 'tls': False})
+        self.assertEqual(8080, port)
+
+    def test_with_dns_name_no_tls(self):
+        # The port specified in the config is returned if security is disabled,
+        # even when a DNS name has been provided.
+        port = jujushell.get_port({
+            'dns-name': 'example.com', 'port': 4247, 'tls': False})
+        self.assertEqual(4247, port)
+
+
 @patch('charmhelpers.core.hookenv.log')
 class TestSaveResource(unittest.TestCase):
 

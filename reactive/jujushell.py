@@ -148,14 +148,17 @@ def config_changed():
 @when('config.changed.port')
 def port_changed():
     config = hookenv.config()
-    hookenv.open_port(config['port'])
-    if config.previous('port'):
-        hookenv.close_port(config.previous('port'))
+    current = jujushell.get_port(config)
+    previous = jujushell.get_port(config.previous)
+    hookenv.open_port(current)
+    if previous != current:
+        hookenv.close_port(previous)
 
 
 @when('website.available')
 def website_available(website):
-    website.configure(port=hookenv.config('port'))
+    config = hookenv.config()
+    website.configure(port=jujushell.get_port(config))
 
 
 @when('website.available')
@@ -167,7 +170,8 @@ def website_port_changed(website):
 @when('prometheus.available')
 @when_not('prometheus.configured')
 def prometheus_available(prometheus):
-    prometheus.configure(port=hookenv.config('port'))
+    config = hookenv.config()
+    prometheus.configure(port=jujushell.get_port(config))
     set_state('prometheus.configured')
 
 
