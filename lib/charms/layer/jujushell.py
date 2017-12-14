@@ -114,7 +114,9 @@ def _build_tls_config(cfg):
 
 def get_port(cfg):
     """Return the port to use for exposing the jujushell service."""
-    return 443 if cfg['tls'] and _get_string(cfg, 'dns-name') else cfg['port']
+    if cfg.get('tls') and _get_string(cfg, 'dns-name'):
+        return 443
+    return cfg.get('port')
 
 
 def update_lxc_quotas(cfg):

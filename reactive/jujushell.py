@@ -149,9 +149,11 @@ def config_changed():
 def port_changed():
     config = hookenv.config()
     current = jujushell.get_port(config)
-    previous = jujushell.get_port(config.previous)
+    # TODO: it's very unfortunate that charm helpers do not allow to get the
+    # previous config as a dict.
+    previous = jujushell.get_port(config._prev_dict or {})
     hookenv.open_port(current)
-    if previous != current:
+    if previous and previous != current:
         hookenv.close_port(previous)
 
 
