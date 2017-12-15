@@ -24,6 +24,14 @@ options:
             If not provided, no certificate is used for the connection.
             If it is set to "from-unit" (the default), then the certificate is
             obtained from the unit agent file.
+    dns-name:
+        type: string
+        default: ''
+        description: |
+            The optional DNS name for Let's Encrypt, used when TLS is enabled.
+            If not empty, the TLS keys will be managed by Let's Encrypt and
+            therefore the service will run on port 443. As a consequence, the
+            port, tls-cert and tls-key charm options will be ignored.
     tls-cert:
         type: string
         default: ''

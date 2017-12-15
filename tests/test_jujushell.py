@@ -97,6 +97,8 @@ class TestUpdateLXCQuotas(unittest.TestCase):
         self.assertEqual(mock_call.call_count, 4)
 
 
+@patch('charmhelpers.core.hookenv.open_port')
+@patch('charmhelpers.core.hookenv.close_port')
 class TestBuildConfig(unittest.TestCase):
 
     def setUp(self):
@@ -128,7 +130,7 @@ class TestBuildConfig(unittest.TestCase):
         with open('key.pem', 'w') as keyfile:
             keyfile.write('my key')
 
-    def test_no_tls(self):
+    def test_no_tls(self, mock_close_port, mock_open_port):
         # The configuration file is created correctly without TLS.
         jujushell.build_config({
             'log-level': 'info',
@@ -144,8 +146,10 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_tls_provided(self):
+    def test_tls_provided(self, mock_close_port, mock_open_port):
         # Provided TLS keys are properly used.
         jujushell.build_config({
             'log-level': 'debug',
@@ -165,8 +169,11 @@ class TestBuildConfig(unittest.TestCase):
             'tls-key': 'provided key',
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(80)
 
-    def test_tls_provided_but_not_enabled(self):
+    def test_tls_keys_provided_but_tls_not_enabled(
+            self, mock_close_port, mock_open_port):
         # Provided TLS keys are ignored when security is not enabled.
         jujushell.build_config({
             'log-level': 'debug',
@@ -184,8 +191,31 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(80)
 
-    def test_tls_generated(self):
+    def test_dns_name_provided_but_tls_not_enabled(
+            self, mock_close_port, mock_open_port):
+        # The provided DNS name is ignored when security is not enabled.
+        jujushell.build_config({
+            'dns-name': 'shell.example.com',
+            'log-level': 'debug',
+            'port': 8080,
+            'tls': False,
+        })
+        expected_config = {
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 8080,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(8080)
+
+    def test_tls_generated(self, mock_close_port, mock_open_port):
         # TLS keys are generated if not provided.
         self.make_cert()
         with patch('jujushell.call') as mock_call:
@@ -219,8 +249,11 @@ class TestBuildConfig(unittest.TestCase):
             '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0')
         # Key files has been removed.
         self.assertEqual(['files'], os.listdir('.'))
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_tls_generated_when_key_is_missing(self):
+    def test_tls_generated_when_key_is_missing(
+            self, mock_close_port, mock_open_port):
         # TLS keys are generated if only one key is provided, not both.
         self.make_cert()
         with patch('jujushell.call'):
@@ -242,8 +275,55 @@ class TestBuildConfig(unittest.TestCase):
             'tls-key': 'my key',
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_provided_juju_cert(self):
+    def test_dns_name_provided(self, mock_close_port, mock_open_port):
+        # The DNS name is propagated to the service when provided.
+        jujushell.build_config({
+            'dns-name': 'shell.example.com',
+            'log-level': 'debug',
+            'port': 443,
+            'tls': True,
+        })
+        expected_config = {
+            'dns-name': 'shell.example.com',
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 443,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(443)
+
+    def test_tls_keys_ignored_when_dns_name_provided(
+            self, mock_close_port, mock_open_port):
+        # The TLS keys and port options are ignored when a DNS name is set.
+        jujushell.build_config({
+            'dns-name': 'example.com',
+            'log-level': 'debug',
+            'port': 80,
+            'tls': True,
+            'tls-cert': base64.b64encode(b'provided cert'),
+            'tls-key': base64.b64encode(b'provided key'),
+        })
+        expected_config = {
+            'dns-name': 'example.com',
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'debug',
+            'port': 443,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(443)
+
+    def test_provided_juju_cert(self, mock_close_port, mock_open_port):
         # The configuration file is created with the provided Juju certificate.
         jujushell.build_config({
             'log-level': 'info',
@@ -260,8 +340,10 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_juju_cert_from_agent_file(self):
+    def test_juju_cert_from_agent_file(self, mock_close_port, mock_open_port):
         # A Juju certificate can be retrieved from the agent file in the unit.
         # Make agent file live in the temp dir.
         agent = os.path.join(os.environ['CHARM_DIR'], '..', 'agent.conf')
@@ -282,8 +364,10 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_provided_juju_addresses(self):
+    def test_provided_juju_addresses(self, mock_close_port, mock_open_port):
         # Juju addresses can be provided via the configuration.
         jujushell.build_config({
             'juju-addrs': '1.2.3.4/provided 4.3.2.1/provided',
@@ -300,8 +384,28 @@ class TestBuildConfig(unittest.TestCase):
             'profiles': ['default', 'termserver-limited'],
         }
         self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
-    def test_error_no_juju_addresses(self):
+    def test_previous_port_closed(self, mock_close_port, mock_open_port):
+        # When changing between ports, the previous one is properly closed.
+        Config = type('Config', (dict,), {'_prev_dict': None})
+        config = Config({
+            'dns-name': 'shell.example.com',
+            'log-level': 'debug',
+            'port': 80,
+            'tls': True,
+        })
+        config._prev_dict = {
+            'log-level': 'debug',
+            'port': 80,
+            'tls': True,
+        }
+        jujushell.build_config(config)
+        mock_close_port.assert_called_once_with(80)
+        mock_open_port.assert_called_once_with(443)
+
+    def test_error_no_juju_addresses(self, mock_close_port, mock_open_port):
         # A ValueError is raised if no Juju addresses can be retrieved.
         os.environ['JUJU_API_ADDRESSES'] = ''
         with self.assertRaises(ValueError) as ctx:
@@ -311,6 +415,39 @@ class TestBuildConfig(unittest.TestCase):
                 'tls': False,
             })
         self.assertEqual('could not find API addresses', str(ctx.exception))
+        self.assertEqual(0, mock_close_port.call_count)
+        self.assertEqual(0, mock_open_port.call_count)
+
+
+class TestGetPort(unittest.TestCase):
+
+    def test_with_dns_name(self):
+        # Port 443 is returned if a DNS name has been provided.
+        port = jujushell.get_port({
+            'dns-name': 'example.com', 'port': 4247, 'tls': True})
+        self.assertEqual(443, port)
+
+    def test_with_invalid_dns_name(self):
+        # The DNS name is ignored if not valid.
+        port = jujushell.get_port({'dns-name': ' ', 'port': 4247, 'tls': True})
+        self.assertEqual(4247, port)
+
+    def test_without_dns_name(self):
+        # The port specified in the config is returned if no DNS name is set.
+        port = jujushell.get_port({'port': 8000, 'tls': True})
+        self.assertEqual(8000, port)
+
+    def test_without_dns_name_no_tls(self):
+        # The port specified in the config is returned if security is disabled.
+        port = jujushell.get_port({'port': 8080, 'tls': False})
+        self.assertEqual(8080, port)
+
+    def test_with_dns_name_no_tls(self):
+        # The port specified in the config is returned if security is disabled,
+        # even when a DNS name has been provided.
+        port = jujushell.get_port({
+            'dns-name': 'example.com', 'port': 4247, 'tls': False})
+        self.assertEqual(4247, port)
 
 
 @patch('charmhelpers.core.hookenv.log')

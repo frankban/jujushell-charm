@@ -71,32 +71,61 @@ def call(command, *args, **kwargs):
 
 def build_config(cfg):
     """Build and save the jujushell server config."""
-    juju_addrs = (_get_string(cfg, 'juju-addrs') or
-                  os.getenv('JUJU_API_ADDRESSES'))
+    juju_addrs = (
+        _get_string(cfg, 'juju-addrs') or
+        os.getenv('JUJU_API_ADDRESSES'))
     if not juju_addrs:
         raise ValueError('could not find API addresses')
     juju_cert = _get_string(cfg, 'juju-cert')
     if juju_cert == 'from-unit':
         juju_cert = _get_juju_cert(agent_path())
 
+    current_port = get_port(cfg)
+    # TODO: it's very unfortunate that charm helpers do not allow to get the
+    # previous config as a dict.
+    previous_cfg = getattr(cfg, '_prev_dict', {}) or {}
+    previous_port = get_port(previous_cfg)
+    hookenv.open_port(current_port)
+    if previous_port and previous_port != current_port:
+        hookenv.close_port(previous_port)
+
     data = {
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
-        'port': cfg['port'],
+        'port': current_port,
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
-        cert, key = cfg['tls-cert'], cfg['tls-key']
-        if key != "" and cert != "":
-            key = base64.b64decode(key).decode('utf-8')
-            cert = base64.b64decode(cert).decode('utf-8')
-        else:
-            key, cert = _get_self_signed_cert()
-        data.update({'tls-cert': cert, 'tls-key': key})
+        data.update(_build_tls_config(cfg))
     with open(config_path(), 'w') as stream:
         yaml.safe_dump(data, stream=stream)
+
+
+def _build_tls_config(cfg):
+    """Return jujushell server config related to TLS."""
+    dns_name = _get_string(cfg, 'dns-name')
+    if dns_name:
+        # Let's Encrypt is used for managing certificates.
+        return {'dns-name': dns_name}
+    cert, key = cfg['tls-cert'], cfg['tls-key']
+    if cert != "" and key != "":
+        # Keys have been provided as options.
+        return {
+            'tls-cert': base64.b64decode(cert).decode('utf-8'),
+            'tls-key': base64.b64decode(key).decode('utf-8'),
+        }
+    # Automatically generate a self-signed certificate.
+    key, cert = _get_self_signed_cert()
+    return {'tls-cert': cert, 'tls-key': key}
+
+
+def get_port(cfg):
+    """Return the port to use for exposing the jujushell service."""
+    if cfg.get('tls') and _get_string(cfg, 'dns-name'):
+        return 443
+    return cfg.get('port')
 
 
 def update_lxc_quotas(cfg):

@@ -62,11 +62,15 @@ def install_zfsutils():
 @when_not('jujushell.resource.available.jujushell')
 def install_jujushell():
     hookenv.status_set('maintenance', 'fetching jujushell')
+    path = jujushell.jujushell_path()
     try:
-        jujushell.save_resource('jujushell', jujushell.jujushell_path())
-        os.chmod(jujushell.jujushell_path(), 0o775)
-    except OSError:
-        hookenv.status_set('blocked', 'jujushell resource not available')
+        jujushell.save_resource('jujushell', path)
+        os.chmod(path, 0o775)
+        # Allow for running jujushell on privileged ports.
+        jujushell.call('setcap', 'CAP_NET_BIND_SERVICE=+eip', path)
+    except OSError as err:
+        hookenv.status_set(
+            'blocked', 'jujushell resource not available: {}'.format(err))
 
 
 @when('jujushell.install')
@@ -75,8 +79,9 @@ def install_termserver():
     hookenv.status_set('maintenance', 'fetching termserver')
     try:
         jujushell.save_resource('termserver', jujushell.termserver_path())
-    except OSError:
-        hookenv.status_set('blocked', 'termserver resource not available')
+    except OSError as err:
+        hookenv.status_set(
+            'blocked', 'termserver resource not available: {}'.format(err))
 
 
 @when('jujushell.resource.available.jujushell')
@@ -140,17 +145,10 @@ def config_changed():
     set_state('jujushell.restart')
 
 
-@when('config.changed.port')
-def port_changed():
-    config = hookenv.config()
-    hookenv.open_port(config['port'])
-    if config.previous('port'):
-        hookenv.close_port(config.previous('port'))
-
-
 @when('website.available')
 def website_available(website):
-    website.configure(port=hookenv.config('port'))
+    config = hookenv.config()
+    website.configure(port=jujushell.get_port(config))
 
 
 @when('website.available')
@@ -162,7 +160,8 @@ def website_port_changed(website):
 @when('prometheus.available')
 @when_not('prometheus.configured')
 def prometheus_available(prometheus):
-    prometheus.configure(port=hookenv.config('port'))
+    config = hookenv.config()
+    prometheus.configure(port=jujushell.get_port(config))
     set_state('prometheus.configured')
 
 
