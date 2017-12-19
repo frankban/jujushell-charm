@@ -78,7 +78,10 @@ def install_jujushell():
 def install_termserver():
     hookenv.status_set('maintenance', 'fetching termserver')
     try:
-        jujushell.save_resource('termserver', jujushell.termserver_path())
+        jujushell.save_resource(
+            'termserver', jujushell.termserver_path())
+        jujushell.save_resource(
+            'limited-termserver', jujushell.termserver_path(limited=True))
     except OSError as err:
         hookenv.status_set(
             'blocked', 'termserver resource not available: {}'.format(err))
@@ -102,8 +105,10 @@ def setup_lxd():
 @when('jujushell.lxd.configured')
 @when_not('jujushell.lxd.image.imported.termserver')
 def import_image():
-    hookenv.status_set('maintenance', 'importing termserver image')
-    jujushell.import_lxd_image('termserver', jujushell.termserver_path())
+    hookenv.status_set('maintenance', 'importing termserver images')
+    limited = hookenv.config()['limit-termserver']
+    jujushell.import_lxd_image(
+        'termserver', jujushell.termserver_path(limited=limited))
 
 
 @when('jujushell.lxd.image.imported.termserver')
@@ -142,6 +147,7 @@ def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
     jujushell.update_lxc_quotas(config)
+    remove_state('jujushell.lxd.image.imported.termserver')
     set_state('jujushell.restart')
 
 
