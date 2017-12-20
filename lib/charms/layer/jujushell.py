@@ -39,9 +39,9 @@ def jujushell_path():
     return os.path.join(hookenv.charm_dir(), 'files', 'jujushell')
 
 
-def termserver_path():
+def termserver_path(limited=False):
     """Get the location for the termserver image."""
-    return '/var/tmp/termserver.tar.gz'
+    return '/var/tmp/termserver{}.tar.gz'.format('-limited' if limited else '')
 
 
 def call(command, *args, **kwargs):

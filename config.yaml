@@ -64,3 +64,7 @@ options:
         type: int
         default: 200
         description: Number of processes allowed inside LXD containers.
+    limit-termserver:
+        type: boolean
+        default: false
+        description: Whether or not to use the limited-functionality termserver.

@@ -97,6 +97,17 @@ class TestUpdateLXCQuotas(unittest.TestCase):
         self.assertEqual(mock_call.call_count, 4)
 
 
+class TestTermserverPath(unittest.TestCase):
+
+    def test_termserver_path(self):
+        self.assertEqual(
+            jujushell.termserver_path(),
+            '/var/tmp/termserver.tar.gz')
+        self.assertEqual(
+            jujushell.termserver_path(limited=True),
+            '/var/tmp/termserver-limited.tar.gz')
+
+
 @patch('charmhelpers.core.hookenv.open_port')
 @patch('charmhelpers.core.hookenv.close_port')
 class TestBuildConfig(unittest.TestCase):

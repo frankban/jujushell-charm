@@ -17,6 +17,11 @@ resources:
         type: file
         filename: termserver.tar.gz
         description: LXC image to use for launching internal shell instances.
+    limited-termserver:
+        type: file
+        filename: limited-termserver.tar.gz
+        description: |
+            LXC image to use for launching locked-down internal shell instances.
     jujushell:
         type: file
         filename: jujushell
