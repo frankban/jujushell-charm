@@ -78,6 +78,8 @@ def install_jujushell():
 def install_termserver():
     hookenv.status_set('maintenance', 'fetching termserver')
     try:
+        # TODO for now, we save both termserver resources. In the future, this
+        # may be streamlined to only save one at a time as needed.
         jujushell.save_resource(
             'termserver', jujushell.termserver_path())
         jujushell.save_resource(
