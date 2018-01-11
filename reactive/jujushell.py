@@ -12,10 +12,11 @@ from charms.layer import (
     snap,
 )
 from charms.reactive import (
+    is_flag_set,
     hook,
     only_once,
-    remove_state,
-    set_state,
+    clear_flag,
+    set_flag,
     when,
     when_not,
 )
@@ -23,25 +24,25 @@ from charms.reactive import (
 
 @hook('install')
 def install():
-    set_state('jujushell.install')
+    set_flag('jujushell.install')
 
 
 @hook('upgrade-charm')
 def upgrade_charm():
-    remove_state('jujushell.resource.available.jujushell')
-    remove_state('jujushell.resource.available.termserver')
-    remove_state('jujushell.lxd.image.imported.termserver')
-    set_state('jujushell.restart')
+    clear_flag('jujushell.resource.available.jujushell')
+    clear_flag('jujushell.resource.available.termserver')
+    clear_flag('jujushell.lxd.image.imported.termserver')
+    set_flag('jujushell.restart')
 
 
 @hook('start')
 def start():
-    set_state('jujushell.start')
+    set_flag('jujushell.start')
 
 
 @hook('stop')
 def stop():
-    remove_state('jujushell.start')
+    clear_flag('jujushell.start')
 
 
 @when('jujushell.install')
@@ -52,6 +53,7 @@ def install_lxd():
 
 
 @when('jujushell.install')
+@when('snap.installed.lxd')
 @when_not('apt.installed.zfsutils-linux')
 def install_zfsutils():
     hookenv.status_set('maintenance', 'installing zfsutils-linux')
@@ -122,8 +124,8 @@ def start_service():
     hookenv.status_set('maintenance', 'starting the jujushell service')
     host.service_start('jujushell')
     hookenv.status_set('active', 'jujushell running')
-    remove_state('jujushell.restart')
-    set_state('jujushell.running')
+    clear_flag('jujushell.restart')
+    set_flag('jujushell.running')
 
 
 @when('jujushell.lxd.image.imported.termserver')
@@ -134,23 +136,25 @@ def restart_service():
     hookenv.status_set('maintenance', 'starting the jujushell service')
     host.service_restart('jujushell')
     hookenv.status_set('active', 'jujushell running')
-    remove_state('jujushell.restart')
+    clear_flag('jujushell.restart')
 
 
 @when('jujushell.running')
 @when_not('jujushell.start')
 def stop_service():
     host.service_stop('jujushell')
-    remove_state('jujushell.running')
+    clear_flag('jujushell.running')
 
 
 @when('config.changed')
 def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
-    jujushell.update_lxc_quotas(config)
-    remove_state('jujushell.lxd.image.imported.termserver')
-    set_state('jujushell.restart')
+
+    if is_flag_set('snap.installed.lxd'):
+        jujushell.update_lxc_quotas(config)
+        clear_flag('jujushell.lxd.image.imported.termserver')
+    set_flag('jujushell.restart')
 
 
 @when('website.available')
@@ -170,10 +174,10 @@ def website_port_changed(website):
 def prometheus_available(prometheus):
     config = hookenv.config()
     prometheus.configure(port=jujushell.get_port(config))
-    set_state('prometheus.configured')
+    set_flag('prometheus.configured')
 
 
 @when_not('prometheus.available')
 @when('prometheus.configured')
 def prometheus_unavailable():
-    remove_state('prometheus.configured')
+    clear_flag('prometheus.configured')

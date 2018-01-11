@@ -13,7 +13,7 @@ from charmhelpers.core import (
     templating,
 )
 from charms.reactive import (
-    set_state,
+    set_flag,
 )
 import pylxd
 import yaml
@@ -189,7 +189,7 @@ def save_resource(name, path):
         raise OSError(msg)
     os.rename(resource, path)
     hookenv.log('resource {!r} saved at {!r}'.format(name, path))
-    set_state('jujushell.resource.available.{}'.format(name))
+    set_flag('jujushell.resource.available.{}'.format(name))
 
 
 def install_service():
@@ -208,7 +208,7 @@ def install_service():
     hookenv.status_set('maintenance', 'enabling systemd module')
     call('systemctl', 'enable', '/usr/lib/systemd/user/jujushell.service')
     call('systemctl', 'daemon-reload')
-    set_state('jujushell.service.installed')
+    set_flag('jujushell.service.installed')
     hookenv.status_set('maintenance', 'jujushell installed')
 
 
@@ -245,7 +245,7 @@ def import_lxd_image(name, path):
     elif alias.fingerprint != fingerprint:
         alias.delete_alias(name)
         image.add_alias(name, '')
-    set_state('jujushell.lxd.image.imported.{}'.format(name))
+    set_flag('jujushell.lxd.image.imported.{}'.format(name))
 
 
 def _lxd_client():
@@ -271,7 +271,7 @@ def setup_lxd():
     if not initialized:
         call(_LXD_INIT_COMMAND, shell=True, cwd=cwd)
     call(_LXD_WAIT_COMMAND, shell=True, cwd=cwd)
-    set_state('jujushell.lxd.configured')
+    set_flag('jujushell.lxd.configured')
 
 
 # Define the command used to initialize LXD.
