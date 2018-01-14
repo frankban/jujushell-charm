@@ -80,21 +80,23 @@ def build_config(cfg):
     if juju_cert == 'from-unit':
         juju_cert = _get_juju_cert(agent_path())
 
-    current_port = get_port(cfg)
+    current_ports = get_ports(cfg)
     # TODO: it's very unfortunate that charm helpers do not allow to get the
     # previous config as a dict.
     previous_cfg = getattr(cfg, '_prev_dict', {}) or {}
-    previous_port = get_port(previous_cfg)
-    hookenv.open_port(current_port)
-    if previous_port and previous_port != current_port:
-        hookenv.close_port(previous_port)
+    previous_ports = get_ports(previous_cfg)
+    for port in current_ports:
+        hookenv.open_port(port)
+    for port in previous_ports:
+        if port not in current_ports:
+            hookenv.close_port(port)
 
     data = {
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
-        'port': current_port,
+        'port': current_ports[0],
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
     }
     if cfg['tls']:
@@ -121,11 +123,18 @@ def _build_tls_config(cfg):
     return {'tls-cert': cert, 'tls-key': key}
 
 
-def get_port(cfg):
-    """Return the port to use for exposing the jujushell service."""
+def get_ports(cfg):
+    """Return the ports that need to be open for the jujushell service.
+
+    If multiple ports are returned, the first one is also used for the
+    jujushell service configuration.
+    """
     if cfg.get('tls') and _get_string(cfg, 'dns-name'):
-        return 443
-    return cfg.get('port')
+        # The jujushell is using Let's Encrypt, and therefore it needs port 443
+        # (for the service) and port 80 (for the HTTP challenge) to be open.
+        return (443, 80)
+    port = cfg.get('port')
+    return (port,) if port else ()
 
 
 def update_lxc_quotas(cfg):

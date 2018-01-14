@@ -160,7 +160,10 @@ def config_changed():
 @when('website.available')
 def website_available(website):
     config = hookenv.config()
-    website.configure(port=jujushell.get_port(config))
+    # Multiple ports are only required when using Let's Encrypt. Since a
+    # website relation is being established here, we can assume that the TLS
+    # termination is done elsewhere.
+    website.configure(port=jujushell.get_ports(config)[0])
 
 
 @when('website.available')
@@ -173,7 +176,7 @@ def website_port_changed(website):
 @when_not('prometheus.configured')
 def prometheus_available(prometheus):
     config = hookenv.config()
-    prometheus.configure(port=jujushell.get_port(config))
+    prometheus.configure(port=jujushell.get_ports(config)[0])
     set_flag('prometheus.configured')
 
 
