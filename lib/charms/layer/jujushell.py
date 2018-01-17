@@ -92,6 +92,7 @@ def build_config(cfg):
             hookenv.close_port(port)
 
     data = {
+        'allowed-users': _get_string(cfg, 'allowed-users').split(),
         'juju-addrs': juju_addrs.split(),
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
