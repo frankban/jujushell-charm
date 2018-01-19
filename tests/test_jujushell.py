@@ -149,6 +149,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': False,
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -170,6 +171,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls-key': base64.b64encode(b'provided key'),
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -194,6 +196,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls-key': base64.b64encode(b'provided key'),
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -215,6 +218,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': False,
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -238,6 +242,7 @@ class TestBuildConfig(unittest.TestCase):
                 'tls-key': '',
             })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -276,6 +281,7 @@ class TestBuildConfig(unittest.TestCase):
                 'tls-key': '',
             })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
@@ -298,6 +304,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': True,
         })
         expected_config = {
+            'allowed-users': [],
             'dns-name': 'shell.example.com',
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
@@ -323,6 +330,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls-key': base64.b64encode(b'provided key'),
         })
         expected_config = {
+            'allowed-users': [],
             'dns-name': 'example.com',
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
@@ -345,6 +353,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': False,
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': 'provided cert',
@@ -369,6 +378,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': False,
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': 'agent cert',
@@ -389,6 +399,7 @@ class TestBuildConfig(unittest.TestCase):
             'tls': False,
         })
         expected_config = {
+            'allowed-users': [],
             'image-name': 'termserver',
             'juju-addrs': ['1.2.3.4/provided', '4.3.2.1/provided'],
             'juju-cert': '',
@@ -470,6 +481,27 @@ class TestBuildConfig(unittest.TestCase):
         self.assertEqual('could not find API addresses', str(ctx.exception))
         self.assertEqual(0, mock_close_port.call_count)
         self.assertEqual(0, mock_open_port.call_count)
+
+    def test_allowed_users(self, mock_close_port, mock_open_port):
+        # The list of allowed users is properly generated.
+        jujushell.build_config({
+            'allowed-users': 'who dalek rose@external',
+            'log-level': 'info',
+            'port': 4247,
+            'tls': False,
+        })
+        expected_config = {
+            'allowed-users': ['who', 'dalek', 'rose@external'],
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'info',
+            'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
 
 
 class TestGetPorts(unittest.TestCase):

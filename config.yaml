@@ -68,3 +68,11 @@ options:
         type: boolean
         default: false
         description: Whether or not to use the limited-functionality termserver.
+    allowed-users:
+        type: string
+        default: ''
+        description: |
+            A space separated list of user names that are allowed to access the
+            service. An empty list means that all users who can authenticate
+            against the controller are allowed. For external users, names must
+            include the "@external" suffix.
