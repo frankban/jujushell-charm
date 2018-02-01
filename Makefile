@@ -30,11 +30,11 @@ devenv: $(PYTHON)
 
 .PHONY: lint
 lint: $(PYTHON)
-	@$(BIN)/flake8 actions/* lib/charms/layer/*.py reactive/*.py tests/*.py
+	@$(BIN)/flake8 actions/* lib/charms/layer/*.py reactive/*.py tests/*.py scripts/*.py
 
 .PHONY: test
 test: $(PYTHON)
-	@$(BIN)/coverage run --source jujushell -m unittest discover -v -s tests/
+	@$(BIN)/coverage run --source jujushell -m unittest discover -v -s tests/ scripts/
 	@$(BIN)/coverage report -m
 	@rm .coverage
 
