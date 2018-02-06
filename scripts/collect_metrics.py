@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 from urllib import request
 from urllib.error import HTTPError
@@ -17,6 +19,9 @@ METRIC_NAME_MAP = {
 
 
 def get_metric(metric_name):
+    """Fetch a given metric from the prometheus metrics and return to
+    omnibus.
+    """
     metric = METRIC_NAME_MAP.get(metric_name)
     if metric is None:
         return ''
@@ -25,7 +30,7 @@ def get_metric(metric_name):
     except HTTPError:
         return ''
     for line in response:
-        if line.startswith(METRIC_NAME_MAP[metric_name]):
+        if line.startswith(metric):
             return line.split(' ')[-1]
     return ''
 

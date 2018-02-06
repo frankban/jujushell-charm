@@ -34,7 +34,7 @@ lint: $(PYTHON)
 
 .PHONY: test
 test: $(PYTHON)
-	@$(BIN)/coverage run --source jujushell -m unittest discover -v -s tests/ scripts/
+	@$(BIN)/coverage run --source jujushell -m unittest discover -v -s tests/
 	@$(BIN)/coverage report -m
 	@rm .coverage
 

@@ -317,7 +317,3 @@ def exterminate_containers():
         # 2.2.4 we can replace the suprocess call with calls to
         # container.stop(wait=True) and container.delete()
         call('/snap/bin/lxc', 'delete', '-f', container.name)
-
-
-def fetch_metrics():
-    pass

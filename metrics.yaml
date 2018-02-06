@@ -2,28 +2,28 @@ metrics:
     requests_in_flight:
         type: gauge
         description: Number of requests in flight.
-        command: scripts/metrics_scripts/requests_in_flight
+        command: scripts/collect_metrics.py requests_in_flight
     requests_count:
         type: gauge
         description: Count of requests.
-        command: scripts/metrics_scripts/requests_count
+        command: scripts/collect_metrics.py requests_count
     requests_duration:
         type: gauge
-        description: The duration of requests.
-        command: scripts/metrics_scripts/requests_duration
+        description: The duration of requests in seconds.
+        command: scripts/collect_metrics.py requests_duration
     errors_count:
         type: gauge
         description: The number of encountered errors
-        command: scripts/metrics_scripts/errors_count
+        command: scripts/collect_metrics.py errors_count
     containers_in_flight:
         type: gauge
         description: The number of containers currently present in the unit.
-        command: scripts/metrics_scripts/containers_in_flight
+        command: scripts/collect_metrics.py containers_in_flight
     containers_duration_create_container:
         type: gauge
-        description: Time spent creating containers.
-        command: scripts/metrics_scripts/containers_duration_create_container
+        description: Time spent creating containers in seconds.
+        command: scripts/collect_metrics.py containers_duration_create_container
     containers_duration_get_all_containers:
         type: gauge
-        description: Time spent getting containers.
-        command: scripts/metrics_scripts/containers_duration_get_all_containers
+        description: Time spent getting containers in seconds.
+        command: scripts/collect_metrics.py containers_duration_get_all_containers
