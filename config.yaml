@@ -76,3 +76,10 @@ options:
             service. An empty list means that all users who can authenticate
             against the controller are allowed. For external users, names must
             include the "@external" suffix.
+    session-timeout:
+        type: int
+        default: 0
+        description: |
+            The number of minutes of inactivity to wait before expiring a
+            session and stopping user container instances. A zero value means
+            that the session never expires.

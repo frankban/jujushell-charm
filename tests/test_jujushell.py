@@ -156,6 +156,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'info',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -178,6 +179,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'debug',
             'port': 80,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
             'tls-cert': 'provided cert',
             'tls-key': 'provided key',
         }
@@ -203,6 +205,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'debug',
             'port': 80,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -225,6 +228,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'debug',
             'port': 8080,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -249,6 +253,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'trace',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
         }
@@ -288,6 +293,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'trace',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
         }
@@ -312,6 +318,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'debug',
             'port': 443,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -338,6 +345,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'debug',
             'port': 443,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -360,6 +368,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'info',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -385,6 +394,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'info',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -406,6 +416,7 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'info',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -498,6 +509,29 @@ class TestBuildConfig(unittest.TestCase):
             'log-level': 'info',
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
+
+    def test_session_timeout(self, mock_close_port, mock_open_port):
+        # The session timeout value is properly generated.
+        jujushell.build_config({
+            'log-level': 'info',
+            'port': 4247,
+            'session-timeout': 42,
+            'tls': False,
+        })
+        expected_config = {
+            'allowed-users': [],
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'info',
+            'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 42,
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
