@@ -99,6 +99,7 @@ def build_config(cfg):
         'log-level': cfg['log-level'],
         'port': current_ports[0],
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
+        'session-timeout': cfg.get('session-timeout', 0),
     }
     if cfg['tls']:
         data.update(_build_tls_config(cfg))
