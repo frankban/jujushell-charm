@@ -83,3 +83,9 @@ options:
             The number of minutes of inactivity to wait before expiring a
             session and stopping user container instances. A zero value means
             that the session never expires.
+    welcome-message:
+        type: string
+        default: ''
+        description: |
+            An optional message to be displayed when users start the shell
+            session.

@@ -100,6 +100,7 @@ def build_config(cfg):
         'port': current_ports[0],
         'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
         'session-timeout': cfg.get('session-timeout', 0),
+        'welcome-message': _get_string(cfg, 'welcome-message'),
     }
     if cfg['tls']:
         data.update(_build_tls_config(cfg))
