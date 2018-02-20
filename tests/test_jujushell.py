@@ -157,6 +157,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -182,6 +183,7 @@ class TestBuildConfig(unittest.TestCase):
             'session-timeout': 0,
             'tls-cert': 'provided cert',
             'tls-key': 'provided key',
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -206,6 +208,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 80,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -229,6 +232,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 8080,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -256,6 +260,7 @@ class TestBuildConfig(unittest.TestCase):
             'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         # The right command has been executed.
@@ -296,6 +301,7 @@ class TestBuildConfig(unittest.TestCase):
             'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -319,6 +325,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 443,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -346,6 +353,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 443,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -369,6 +377,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -395,6 +404,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -417,6 +427,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -510,6 +521,7 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 0,
+            'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
@@ -532,6 +544,30 @@ class TestBuildConfig(unittest.TestCase):
             'port': 4247,
             'profiles': ['default', 'termserver-limited'],
             'session-timeout': 42,
+            'welcome-message': '',
+        }
+        self.assertEqual(expected_config, self.get_config())
+        self.assertEqual(0, mock_close_port.call_count)
+        mock_open_port.assert_called_once_with(4247)
+
+    def test_welcome_message(self, mock_close_port, mock_open_port):
+        # The welcome message is properly handled.
+        jujushell.build_config({
+            'log-level': 'info',
+            'port': 4247,
+            'tls': False,
+            'welcome-message': '  these are\nthe voyages\n\n',
+        })
+        expected_config = {
+            'allowed-users': [],
+            'image-name': 'termserver',
+            'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
+            'juju-cert': '',
+            'log-level': 'info',
+            'port': 4247,
+            'profiles': ['default', 'termserver-limited'],
+            'session-timeout': 0,
+            'welcome-message': 'these are\nthe voyages',
         }
         self.assertEqual(expected_config, self.get_config())
         self.assertEqual(0, mock_close_port.call_count)
