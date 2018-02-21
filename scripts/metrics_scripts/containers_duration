@@ -1,3 +1,0 @@
-#!/bin/sh
-
-python ../collect_metrics.py containers_duration
