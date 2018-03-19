@@ -1,0 +1,2 @@
+firestealer
+setuptools_scm # Required to avoid python-dateutil errors.
