@@ -30,7 +30,7 @@ devenv: $(PYTHON)
 
 .PHONY: lint
 lint: $(PYTHON)
-	@$(BIN)/flake8 actions/* lib/charms/layer/*.py reactive/*.py tests/*.py scripts/*.py
+	@$(BIN)/flake8 actions/* hooks/collect-metrics lib/charms/layer/*.py reactive/*.py tests/*.py
 
 .PHONY: test
 test: $(PYTHON)
