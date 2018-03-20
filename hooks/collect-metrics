@@ -17,6 +17,16 @@ from firestealer import text_to_samples  # noqa: E402
 import yaml  # noqa: E402
 
 
+# Map metrics names to samples to be collected.
+METRICS = {
+    'containers_in_flight': 'jujushell_containers_in_flight',
+    'errors_count': 'jujushell_errors_count',
+    'requests_count': 'jujushell_requests_count',
+    'requests_duration': 'jujushell_requests_duration_sum',
+    'requests_in_flight': 'jujushell_requests_in_flight',
+}
+
+
 def main():
     """Collect and add metrics to juju."""
     url = service_url()
@@ -45,15 +55,12 @@ def retrieve_samples(url):
 
 def add_metrics(samples):
     """Add the given samples as metrics to Juju."""
-    sd = dict((sample.name, sample.value) for sample in samples)
-    subprocess.check_call([
-        'add-metric',
-        'requests_in_flight={}'.format(sd['jujushell_requests_in_flight']),
-        'requests_count={}'.format(sd['jujushell_requests_count']),
-        'requests_duration={}'.format(sd['jujushell_requests_duration_sum']),
-        'errors_count={}'.format(sd['jujushell_errors_count']),
-        'containers_in_flight={}'.format(sd['jujushell_containers_in_flight']),
-    ])
+    sampledict = dict((sample.name, sample.value) for sample in samples)
+    cmd = ['add-metric'] + [
+        '{}={}'.format(metric, sampledict[key])
+        for metric, key in METRICS.items() if key in sampledict
+    ]
+    subprocess.check_call(cmd)
 
 
 if __name__ == '__main__':
