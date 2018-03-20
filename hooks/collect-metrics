@@ -8,7 +8,7 @@ sys.path.append('lib')
 from charms.layer.basic import activate_venv
 activate_venv()
 
-# Start the script as usual
+# Start the script as usual.
 import ssl
 import subprocess
 from urllib import request

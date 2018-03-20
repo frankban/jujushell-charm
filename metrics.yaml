@@ -2,20 +2,15 @@ metrics:
     requests_in_flight:
         type: gauge
         description: Number of requests in flight.
-        command: scripts/metrics.sh jujushell_requests_in_flight
     requests_count:
         type: gauge
         description: Count of requests.
-        command: scripts/metrics.sh jujushell_requests_count
     requests_duration:
         type: gauge
         description: The duration of requests in seconds.
-        command: scripts/metrics.sh jujushell_requests_duration_sum
     errors_count:
         type: gauge
         description: The number of encountered errors
-        command: scripts/metrics.sh jujushell_errors_count
     containers_in_flight:
         type: gauge
         description: The number of containers currently present in the unit.
-        command: scripts/metrics.sh jujushell_containers_in_flight
