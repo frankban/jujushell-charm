@@ -40,7 +40,13 @@ def service_url():
     # in this hook.
     with open('files/config.yaml') as f:
         config = yaml.load(f)
-    return 'https://localhost:{}/metrics'.format(config['port'])
+    schema, host = 'http', 'localhost'
+    dnsname = config.get('dns-name')
+    if dnsname:
+        schema, host = 'https', dnsname
+    elif config.get('tls-cert'):
+        schema = 'https'
+    return '{}://{}:{}/metrics'.format(schema, host, config['port'])
 
 
 def retrieve_samples(url):
