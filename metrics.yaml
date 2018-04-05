@@ -1,16 +1,16 @@
 metrics:
-    jujushell_requests_in_flight:
+    requests_in_flight:
         type: gauge
         description: Number of requests in flight.
-    jujushell_requests_count:
+    requests_count:
         type: gauge
         description: Count of requests.
-    jujushell_requests_duration_sum:
+    requests_duration_sum:
         type: gauge
         description: The duration of requests in seconds.
-    jujushell_errors_count:
+    errors_count:
         type: gauge
         description: The number of encountered errors
-    jujushell_containers_in_flight:
+    containers_in_flight:
         type: gauge
         description: The number of containers currently present in the unit.
