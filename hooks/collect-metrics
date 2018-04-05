@@ -9,64 +9,26 @@ from charms.layer.basic import activate_venv  # noqa: E402
 activate_venv()
 
 # Start the script as usual.
-import ssl  # noqa: E402
-import subprocess  # noqa: E402
-from urllib import request  # noqa: E402
-
-from firestealer import text_to_samples  # noqa: E402
+from firestealer import (
+    add_metrics,
+    retrieve_metrics,
+)  # noqa: E402
 import yaml  # noqa: E402
 
-
-# Map metrics names to samples to be collected.
-METRICS = {
-    'containers_in_flight': 'jujushell_containers_in_flight',
-    'errors_count': 'jujushell_errors_count',
-    'requests_count': 'jujushell_requests_count',
-    'requests_duration': 'jujushell_requests_duration_sum',
-    'requests_in_flight': 'jujushell_requests_in_flight',
-}
+from charms.layer import jujushell  # noqa: E402
 
 
 def main():
     """Collect and add metrics to juju."""
-    url = service_url()
-    samples = retrieve_samples(url)
-    add_metrics(samples)
-
-
-def service_url():
-    """Retrieve the jujushell service URL by parsing its config file."""
     # Note that, for reasons, the charmhelpers config object is not available
     # in this hook.
     with open('files/config.yaml') as f:
-        config = yaml.load(f)
-    schema, host = 'http', 'localhost'
-    dnsname = config.get('dns-name')
-    if dnsname:
-        schema, host = 'https', dnsname
-    elif config.get('tls-cert'):
-        schema = 'https'
-    return '{}://{}:{}/metrics'.format(schema, host, config['port'])
-
-
-def retrieve_samples(url):
-    """Retrieve Prometheus metrics from the given endpoint."""
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
-    with request.urlopen(url, context=context) as response:
-        text = response.read().decode('utf-8')
-    return text_to_samples(text)
-
-
-def add_metrics(samples):
-    """Add the given samples as metrics to Juju."""
-    sampledict = dict((sample.name, sample.value) for sample in samples)
-    cmd = ['add-metric'] + [
-        '{}={}'.format(metric, sampledict[key])
-        for metric, key in METRICS.items() if key in sampledict
-    ]
-    subprocess.check_call(cmd)
+        config = yaml.safe_load(f)
+    with open('metrics.yaml') as f:
+        metrics = yaml.safe_load(f)
+    url = jujushell.service_url(config)
+    samples = retrieve_metrics(url, metrics, noverify=True)
+    add_metrics(samples)
 
 
 if __name__ == '__main__':

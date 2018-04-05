@@ -5,7 +5,7 @@ metrics:
     requests_count:
         type: gauge
         description: Count of requests.
-    requests_duration:
+    requests_duration_sum:
         type: gauge
         description: The duration of requests in seconds.
     errors_count:
