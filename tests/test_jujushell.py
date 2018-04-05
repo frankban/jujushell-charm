@@ -84,7 +84,10 @@ class TestUpdateLXCQuotas(unittest.TestCase):
         }
         with patch('jujushell.call') as mock_call:
             jujushell.update_lxc_quotas(cfg)
-        mock_call.assert_has_calls([
+        expected_calls = [
+            # TODO(frankban): remove the first two calls when snapd is fixed.
+            call('snap', 'connect', 'lxd:lxd-support', 'core:lxd-support'),
+            call('systemctl', 'restart', 'snap.lxd.daemon'),
             call('/snap/bin/lxc', 'profile', 'set', 'default',
                  'limits.cpu', '1'),
             call('/snap/bin/lxc', 'profile', 'set', 'default',
@@ -93,8 +96,9 @@ class TestUpdateLXCQuotas(unittest.TestCase):
                  'limits.memory', '256MB'),
             call('/snap/bin/lxc', 'profile', 'set', 'default',
                  'limits.processes', '100'),
-        ])
-        self.assertEqual(mock_call.call_count, 4)
+        ]
+        mock_call.assert_has_calls(expected_calls)
+        self.assertEqual(mock_call.call_count, len(expected_calls))
 
 
 class TestTermserverPath(unittest.TestCase):
@@ -722,6 +726,34 @@ class TestSetupLXD(unittest.TestCase):
                 jujushell.setup_lxd()
         mock_call.assert_called_once_with(
             jujushell._LXD_WAIT_COMMAND, shell=True, cwd='/')
+
+
+class TestServiceURL(unittest.TestCase):
+
+    tests = [{
+        'about': 'insecure ip',
+        'config': {'port': 8042},
+        'want_url': 'http://localhost:8042/metrics',
+    }, {
+        'about': 'dns name provided',
+        'config': {'dns-name': 'example.com', 'port': 443},
+        'want_url': 'https://example.com:443/metrics',
+    }, {
+        'about': 'certs provided',
+        'config': {'port': 4242, 'tls-cert': 'cert'},
+        'want_url': 'https://localhost:4242/metrics',
+    }, {
+        'about': 'dns name and certs provided',
+        'config': {'dns-name': 'example.com', 'port': 443, 'tls-cert': 'cert'},
+        'want_url': 'https://example.com:443/metrics',
+    }]
+
+    def test_service_url(self):
+        # The service URL is inferred from its configuration.
+        for test in self.tests:
+            with self.subTest(test['about']):
+                url = jujushell.service_url(test['config'])
+                self.assertEqual(url, test['want_url'])
 
 
 if __name__ == '__main__':
