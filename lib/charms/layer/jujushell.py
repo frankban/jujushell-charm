@@ -329,3 +329,14 @@ def exterminate_containers():
         # 2.2.4 we can replace the suprocess call with calls to
         # container.stop(wait=True) and container.delete()
         call('/snap/bin/lxc', 'delete', '-f', container.name)
+
+
+def service_url(config):
+    """Retrieve the jujushell service URL by looking at the given config."""
+    schema, host = 'http', 'localhost'
+    dnsname = config.get('dns-name')
+    if dnsname:
+        schema, host = 'https', dnsname
+    elif config.get('tls-cert'):
+        schema = 'https'
+    return '{}://{}:{}/metrics'.format(schema, host, config['port'])

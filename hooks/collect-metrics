@@ -15,29 +15,20 @@ from firestealer import (
 )  # noqa: E402
 import yaml  # noqa: E402
 
+from charms.layer import jujushell  # noqa: E402
+
 
 def main():
     """Collect and add metrics to juju."""
-    url = service_url()
-    with open('metrics.yaml') as f:
-        metrics = yaml.safe_load(f)
-    samples = retrieve_metrics(url, metrics, noverify=True)
-    add_metrics(samples)
-
-
-def service_url():
-    """Retrieve the jujushell service URL by parsing its config file."""
     # Note that, for reasons, the charmhelpers config object is not available
     # in this hook.
     with open('files/config.yaml') as f:
         config = yaml.safe_load(f)
-    schema, host = 'http', 'localhost'
-    dnsname = config.get('dns-name')
-    if dnsname:
-        schema, host = 'https', dnsname
-    elif config.get('tls-cert'):
-        schema = 'https'
-    return '{}://{}:{}/metrics'.format(schema, host, config['port'])
+    with open('metrics.yaml') as f:
+        metrics = yaml.safe_load(f)
+    url = jujushell.service_url(config)
+    samples = retrieve_metrics(url, metrics, noverify=True)
+    add_metrics(samples)
 
 
 if __name__ == '__main__':
