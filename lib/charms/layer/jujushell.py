@@ -141,8 +141,12 @@ def get_ports(cfg):
 
 
 def update_lxc_quotas(cfg):
-    """Update the default profile to include resource limits from charm
-    config."""
+    """Update the default profile to include resource limits from config."""
+    # TODO(frankban): workaround for bug fixed at
+    # <https://github.com/snapcore/snapd/pull/4981>.
+    call('snap', 'connect', 'lxd:lxd-support', 'core:lxd-support')
+    call('systemctl', 'restart', 'snap.lxd.daemon')
+    # Back to normal procedure.
     call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.cpu',
          _get_string(cfg, 'lxc-quota-cpu-cores'))
     call('/snap/bin/lxc', 'profile', 'set', 'default',
