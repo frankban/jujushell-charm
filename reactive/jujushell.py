@@ -150,8 +150,8 @@ def stop_service():
 def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
-
-    if is_flag_set('snap.installed.lxd'):
+    if is_flag_set('jujushell.lxd.configured'):
+        hookenv.status_set('maintenance', 'updating LXC quotas')
         jujushell.update_lxc_quotas(config)
         clear_flag('jujushell.lxd.image.imported.termserver')
     set_flag('jujushell.restart')

@@ -1,2 +1,3 @@
-firestealer
+firestealer==0.4.1
 setuptools_scm # Required to avoid python-dateutil errors.
+pylxd==2.2.6

@@ -21,6 +21,7 @@ import yaml
 
 # Define the LXD image name and profiles to use when launching instances.
 IMAGE_NAME = 'termserver'
+LXC = '/snap/bin/lxc'
 PROFILE_DEFAULT, PROFILE_TERMSERVER = 'default', 'termserver-limited'
 
 
@@ -142,19 +143,14 @@ def get_ports(cfg):
 
 def update_lxc_quotas(cfg):
     """Update the default profile to include resource limits from config."""
-    # TODO(frankban): workaround for bug fixed at
-    # <https://github.com/snapcore/snapd/pull/4981>.
-    call('snap', 'connect', 'lxd:lxd-support', 'core:lxd-support')
-    call('systemctl', 'restart', 'snap.lxd.daemon')
-    # Back to normal procedure.
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.cpu',
+    call(LXC, 'profile', 'set', 'default', 'limits.cpu',
          _get_string(cfg, 'lxc-quota-cpu-cores'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default',
+    call(LXC, 'profile', 'set', 'default',
          'limits.cpu.allowance',
          _get_string(cfg, 'lxc-quota-cpu-allowance'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.memory',
+    call(LXC, 'profile', 'set', 'default', 'limits.memory',
          _get_string(cfg, 'lxc-quota-ram'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.processes',
+    call(LXC, 'profile', 'set', 'default', 'limits.processes',
          _get_string(cfg, 'lxc-quota-processes'))
 
 
