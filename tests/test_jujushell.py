@@ -85,9 +85,6 @@ class TestUpdateLXCQuotas(unittest.TestCase):
         with patch('jujushell.call') as mock_call:
             jujushell.update_lxc_quotas(cfg)
         expected_calls = [
-            # TODO(frankban): remove the first two calls when snapd is fixed.
-            call('snap', 'connect', 'lxd:lxd-support', 'core:lxd-support'),
-            call('systemctl', 'restart', 'snap.lxd.daemon'),
             call('/snap/bin/lxc', 'profile', 'set', 'default',
                  'limits.cpu', '1'),
             call('/snap/bin/lxc', 'profile', 'set', 'default',

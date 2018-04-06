@@ -1,4 +1,4 @@
-DEBDEPS=python3-virtualenv
+DEBDEPS=build-essential python3-dev python3-virtualenv
 SNAPDEPS=charm
 VENVDEPS=charmhelpers charms.reactive coverage flake8 pylxd pyyaml
 

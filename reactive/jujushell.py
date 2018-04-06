@@ -24,6 +24,13 @@ from charms.reactive import (
 
 @hook('install')
 def install():
+    # pylxd is installed here manually rather than using the apt layer or the
+    # wheelhouse. The latter cannot be used as the package relies on C modules
+    # to be compiled. The apt package is out of date, as we need the fix at
+    # https://github.com/lxc/pylxd/issues/232 in xenial.
+    # TODO(frankban) We can remove this in favor of installing via apt when
+    # xenial is updated with the fixed package.
+    jujushell.call('pip', 'install', 'pylxd==2.2.6')
     set_flag('jujushell.install')
 
 
@@ -104,6 +111,7 @@ def setup_lxd():
     hookenv.status_set('maintenance', 'configuring lxd')
     host.add_user_to_group('ubuntu', 'lxd')
     jujushell.setup_lxd()
+    jujushell.update_lxc_quotas(hookenv.config())
 
 
 @when('jujushell.lxd.configured')
@@ -150,8 +158,7 @@ def stop_service():
 def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
-
-    if is_flag_set('snap.installed.lxd'):
+    if is_flag_set('jujushell.lxd.configured'):
         jujushell.update_lxc_quotas(config)
         clear_flag('jujushell.lxd.image.imported.termserver')
     set_flag('jujushell.restart')

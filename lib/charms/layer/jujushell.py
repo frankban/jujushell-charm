@@ -15,12 +15,12 @@ from charmhelpers.core import (
 from charms.reactive import (
     set_flag,
 )
-import pylxd
 import yaml
 
 
 # Define the LXD image name and profiles to use when launching instances.
 IMAGE_NAME = 'termserver'
+LXC = '/snap/bin/lxc'
 PROFILE_DEFAULT, PROFILE_TERMSERVER = 'default', 'termserver-limited'
 
 
@@ -142,19 +142,15 @@ def get_ports(cfg):
 
 def update_lxc_quotas(cfg):
     """Update the default profile to include resource limits from config."""
-    # TODO(frankban): workaround for bug fixed at
-    # <https://github.com/snapcore/snapd/pull/4981>.
-    call('snap', 'connect', 'lxd:lxd-support', 'core:lxd-support')
-    call('systemctl', 'restart', 'snap.lxd.daemon')
-    # Back to normal procedure.
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.cpu',
+    hookenv.status_set('maintenance', 'updating LXC quotas')
+    call(LXC, 'profile', 'set', 'default', 'limits.cpu',
          _get_string(cfg, 'lxc-quota-cpu-cores'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default',
+    call(LXC, 'profile', 'set', 'default',
          'limits.cpu.allowance',
          _get_string(cfg, 'lxc-quota-cpu-allowance'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.memory',
+    call(LXC, 'profile', 'set', 'default', 'limits.memory',
          _get_string(cfg, 'lxc-quota-ram'))
-    call('/snap/bin/lxc', 'profile', 'set', 'default', 'limits.processes',
+    call(LXC, 'profile', 'set', 'default', 'limits.processes',
          _get_string(cfg, 'lxc-quota-processes'))
 
 
@@ -266,6 +262,7 @@ def import_lxd_image(name, path):
 
 def _lxd_client():
     """Get a client connection to the LXD server."""
+    import pylxd  # Imported here because pylxd is not immediately available.
     return pylxd.client.Client('http+unix://{}'.format(
         parse.quote(_LXD_SOCKET, safe='')))
 
