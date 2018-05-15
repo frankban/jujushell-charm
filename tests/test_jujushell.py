@@ -273,7 +273,7 @@ class TestBuildConfig(unittest.TestCase):
             '-out', 'cert.pem',
             '-days', '365',
             '-nodes',
-            '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0')
+            '-subj', '/C=GB/ST=London/L=London/O=Canonical/OU=JAAS/CN=0.0.0.0')
         # Key files has been removed.
         self.assertEqual(['files'], os.listdir('.'))
         self.assertEqual(0, mock_close_port.call_count)
