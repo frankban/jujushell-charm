@@ -178,7 +178,7 @@ def _get_self_signed_cert():
          '-out', 'cert.pem',
          '-days', '365',
          '-nodes',
-         '-subj', '/C=/ST=/L=/O=/OU=/CN=0.0.0.0')
+         '-subj', '/C=GB/ST=London/L=London/O=Canonical/OU=JAAS/CN=0.0.0.0')
     with open('key.pem') as keyfile:
         key = keyfile.read()
     with open('cert.pem') as certfile:
