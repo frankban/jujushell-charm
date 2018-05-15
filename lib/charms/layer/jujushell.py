@@ -323,13 +323,31 @@ EOF
 _LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
 
 
-def exterminate_containers():
+def exterminate_containers(name=None, only_stopped=False, dry=False):
+    """Remove containers existing in the unit.
+
+    If the container name is provided, remove the container with the given
+    name, otherwise remove all containers. If only_stopped is True, remove
+    containers only if they are stopped. Id dry is True, then do not actually
+    remove containers.
+
+    Return the names of containers that have been removed as a sequence.
+    """
     client = _lxd_client()
+    removed = []
     for container in client.containers.all():
-        # XXX j.c.sackett 2017-11-28 When the pylxd version in the repos is
-        # 2.2.4 we can replace the suprocess call with calls to
-        # container.stop(wait=True) and container.delete()
-        call('/snap/bin/lxc', 'delete', '-f', container.name)
+        if name and (container.name != name):
+            continue
+        is_running = container.status.lower() == 'running'
+        if only_stopped and is_running:
+            continue
+        removed.append(container.name)
+        if dry:
+            continue
+        if is_running:
+            container.stop(wait=True)
+        container.delete()
+    return tuple(removed)
 
 
 def service_url(config):
