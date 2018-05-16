@@ -725,6 +725,187 @@ class TestSetupLXD(unittest.TestCase):
             jujushell._LXD_WAIT_COMMAND, shell=True, cwd='/')
 
 
+class TestExterminateContainers(unittest.TestCase):
+
+    def test_all(self):
+        # Exterminate all existing containers.
+        containers = [
+            ('c1', True),
+            ('c2', False),
+            ('c3', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers()
+        self.assertEqual(removed, ('c1', 'c2', 'c3'))
+        c1, c2, c3 = client.containers.all()
+        c1.stop.assert_called_once_with(wait=True)
+        c1.delete.assert_called_once_with()
+        self.assertFalse(c2.stop.called)
+        c2.delete.assert_called_once_with()
+        c3.stop.assert_called_once_with(wait=True)
+        c3.delete.assert_called_once_with()
+
+    def test_all_dry(self):
+        # Exterminate all existing containers (dry run).
+        containers = [
+            ('c1', True),
+            ('c2', False),
+            ('c3', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(dry=True)
+        self.assertEqual(removed, ('c1', 'c2', 'c3'))
+        c1, c2, c3 = client.containers.all()
+        self.assertFalse(c1.stop.called)
+        self.assertFalse(c1.delete.called)
+        self.assertFalse(c2.stop.called)
+        self.assertFalse(c2.delete.called)
+        self.assertFalse(c3.stop.called)
+        self.assertFalse(c3.delete.called)
+
+    def test_all_none_existing(self):
+        # There is nothing to exterminate if no containers exist.
+        with self.patch_lxd_client([]):
+            removed = jujushell.exterminate_containers()
+        self.assertEqual(removed, ())
+
+    def test_name(self):
+        # Exterminate a specific container.
+        containers = [
+            ('c-good', False),
+            ('c-bad', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(name='c-bad')
+        self.assertEqual(removed, ('c-bad',))
+        cgood, cbad = client.containers.all()
+        self.assertFalse(cgood.stop.called)
+        self.assertFalse(cgood.delete.called)
+        cbad.stop.assert_called_once_with(wait=True)
+        cbad.delete.assert_called_once_with()
+
+    def test_name_dry(self):
+        # Exterminate a specific container (dry run).
+        containers = [
+            ('c-bad', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(name='c-bad', dry=True)
+        self.assertEqual(removed, ('c-bad',))
+        [cbad] = client.containers.all()
+        self.assertFalse(cbad.stop.called)
+        self.assertFalse(cbad.delete.called)
+
+    def test_name_not_found(self):
+        # There is nothing to exterminate if the container does not exist.
+        containers = [
+            ('c1', True),
+            ('c2', False),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(name='no-such')
+        self.assertEqual(removed, ())
+        c1, c2 = client.containers.all()
+        self.assertFalse(c1.stop.called)
+        self.assertFalse(c1.delete.called)
+        self.assertFalse(c2.stop.called)
+        self.assertFalse(c2.delete.called)
+
+    def test_only_stopped(self):
+        # Exterminate stopped containers.
+        containers = [
+            ('c1', False),
+            ('c2', True),
+            ('c3', False),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(only_stopped=True)
+        self.assertEqual(removed, ('c1', 'c3'))
+        c1, c2, c3 = client.containers.all()
+        self.assertFalse(c1.stop.called)
+        c1.delete.assert_called_once_with()
+        self.assertFalse(c2.stop.called)
+        self.assertFalse(c2.delete.called)
+        self.assertFalse(c3.stop.called)
+        c3.delete.assert_called_once_with()
+
+    def test_only_stopped_dry(self):
+        # Exterminate stopped containers (dry run).
+        containers = [
+            ('c1', False),
+            ('c2', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(
+                only_stopped=True, dry=True)
+        self.assertEqual(removed, ('c1',))
+        c1, c2 = client.containers.all()
+        self.assertFalse(c1.stop.called)
+        self.assertFalse(c1.delete.called)
+        self.assertFalse(c2.stop.called)
+        self.assertFalse(c2.delete.called)
+
+    def test_only_stopped_none_stopped(self):
+        # No containers are removed if they are all running.
+        containers = [
+            ('c1', True),
+            ('c2', True),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(only_stopped=True)
+        self.assertEqual(removed, ())
+        c1, c2 = client.containers.all()
+        self.assertFalse(c1.stop.called)
+        self.assertFalse(c1.delete.called)
+        self.assertFalse(c2.stop.called)
+        self.assertFalse(c2.delete.called)
+
+    def test_name_only_stopped_found(self):
+        # Exterminate a stopped container with the given name.
+        containers = [
+            ('mylxc', False),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(
+                name='mylxc', only_stopped=True)
+        self.assertEqual(removed, ('mylxc',))
+        [mylxc] = client.containers.all()
+        self.assertFalse(mylxc.stop.called)
+        mylxc.delete.assert_called_once_with()
+
+    def test_name_only_stopped_not_found(self):
+        # A stopped container with the given name does not exist.
+        containers = [
+            ('mylxc', False),
+        ]
+        with self.patch_lxd_client(containers) as client:
+            removed = jujushell.exterminate_containers(
+                name='no-such', only_stopped=True)
+        self.assertEqual(removed, ())
+        [mylxc] = client.containers.all()
+        self.assertFalse(mylxc.stop.called)
+        self.assertFalse(mylxc.delete.called)
+
+    def patch_lxd_client(self, containers):
+        """Patch the LXD client and make it return the given containers.
+
+        Containers are expressed as tuples (name: str, running: bool).
+        """
+        results = [
+            type('Container', (object,), {
+                'name': name,
+                'status': 'Running' if running else 'Stopped',
+                'stop': Mock(),
+                'delete': Mock(),
+            }) for name, running in containers
+        ]
+        return patch('jujushell._lxd_client', type('Client', (object, ), {
+            'containers': type('Containers', (object,), {
+                'all': lambda: results,
+            }),
+        }))
+
+
 class TestServiceURL(unittest.TestCase):
 
     tests = [{
