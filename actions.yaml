@@ -1,2 +1,16 @@
-exterminate-containers:
-  description: Remove all containers running on the jujushell service.
+exterminate:
+  description: |
+    Remove containers on the jujushell service.
+    Include a list of removed containers in the action output.
+  params:
+    name:
+      type: string
+      description: |
+        The optional name of the container to be removed.
+        If not specified, all containers are removed.
+    only-stopped:
+      type: boolean
+      description: Only remove containers if they are not running.
+    dry:
+      type: boolean
+      description: Do not actually remove containers.
