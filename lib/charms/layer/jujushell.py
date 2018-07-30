@@ -134,8 +134,8 @@ def get_ports(cfg):
     """
     if cfg.get('tls') and _get_string(cfg, 'dns-name'):
         # The jujushell is using Let's Encrypt, and therefore it needs port 443
-        # (for the service) and port 80 (for the HTTP challenge) to be open.
-        return (443, 80)
+        # to be open.
+        return (443,)
     port = cfg.get('port')
     return (port,) if port else ()
 
