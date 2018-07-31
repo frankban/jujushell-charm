@@ -329,9 +329,8 @@ class TestBuildConfig(unittest.TestCase):
             'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
-        self.assertEqual(0, mock_close_port.call_count)
-        self.assertEqual(2, mock_open_port.call_count)
-        mock_open_port.assert_has_calls([call(443), call(80)])
+        self.assertFalse(mock_close_port.called)
+        mock_open_port.assert_called_once_with(443)
 
     def test_tls_keys_ignored_when_dns_name_provided(
             self, mock_close_port, mock_open_port):
@@ -357,9 +356,8 @@ class TestBuildConfig(unittest.TestCase):
             'welcome-message': '',
         }
         self.assertEqual(expected_config, self.get_config())
-        self.assertEqual(0, mock_close_port.call_count)
-        self.assertEqual(2, mock_open_port.call_count)
-        mock_open_port.assert_has_calls([call(443), call(80)])
+        self.assertFalse(mock_close_port.called)
+        mock_open_port.assert_called_once_with(443)
 
     def test_provided_juju_cert(self, mock_close_port, mock_open_port):
         # The configuration file is created with the provided Juju certificate.
@@ -450,47 +448,7 @@ class TestBuildConfig(unittest.TestCase):
         }
         jujushell.build_config(config)
         mock_close_port.assert_called_once_with(8042)
-        self.assertEqual(2, mock_open_port.call_count)
-        mock_open_port.assert_has_calls([call(443), call(80)])
-
-    def test_previous_port_not_closed(self, mock_close_port, mock_open_port):
-        # When changing between ports, the previous one is only closed if
-        # necessary.
-        Config = type('Config', (dict,), {'_prev_dict': None})
-        config = Config({
-            'dns-name': 'shell.example.com',
-            'log-level': 'debug',
-            'port': 80,
-            'tls': True,
-        })
-        config._prev_dict = {
-            'log-level': 'debug',
-            'port': 80,
-            'tls': True,
-        }
-        jujushell.build_config(config)
-        self.assertEqual(0, mock_close_port.call_count)
-        self.assertEqual(2, mock_open_port.call_count)
-        mock_open_port.assert_has_calls([call(443), call(80)])
-
-    def test_multiple_ports_closed(self, mock_close_port, mock_open_port):
-        # When changing between ports, all previous ones are closed.
-        Config = type('Config', (dict,), {'_prev_dict': None})
-        config = Config({
-            'log-level': 'debug',
-            'port': 42,
-            'tls': False,
-        })
-        config._prev_dict = {
-            'dns-name': 'shell.example.com',
-            'log-level': 'debug',
-            'port': 443,
-            'tls': True,
-        }
-        jujushell.build_config(config)
-        self.assertEqual(2, mock_close_port.call_count)
-        mock_close_port.assert_has_calls([call(443), call(80)])
-        mock_open_port.assert_called_once_with(42)
+        mock_open_port.assert_called_once_with(443)
 
     def test_error_no_juju_addresses(self, mock_close_port, mock_open_port):
         # A ValueError is raised if no Juju addresses can be retrieved.
@@ -581,7 +539,7 @@ class TestGetPorts(unittest.TestCase):
         # Ports 443 and 80 are returned if a DNS name has been provided.
         ports = jujushell.get_ports({
             'dns-name': 'example.com', 'port': 4247, 'tls': True})
-        self.assertEqual((443, 80), ports)
+        self.assertEqual((443,), ports)
 
     def test_with_invalid_dns_name(self):
         # The DNS name is ignored if not valid.

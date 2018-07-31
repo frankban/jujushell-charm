@@ -111,7 +111,6 @@ def setup_lxd():
     hookenv.status_set('maintenance', 'configuring lxd')
     host.add_user_to_group('ubuntu', 'lxd')
     jujushell.setup_lxd()
-    jujushell.update_lxc_quotas(hookenv.config())
 
 
 @when('jujushell.lxd.configured')
@@ -159,7 +158,11 @@ def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
     if is_flag_set('jujushell.lxd.configured'):
-        jujushell.update_lxc_quotas(config)
+        try:
+            jujushell.update_lxc_quotas(config)
+        except Exception:
+            # Setting quotas can fail while lxd snap is being upgraded.
+            pass
         clear_flag('jujushell.lxd.image.imported.termserver')
     set_flag('jujushell.restart')
 
