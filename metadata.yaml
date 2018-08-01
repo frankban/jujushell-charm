@@ -1,7 +1,6 @@
 name: jujushell
 series:
     - bionic
-    - xenial
 summary: allow shell access to one's juju model through a web interface
 maintainer: Madison Scott-Clary <madison.scott-clary@canonical.com>
 description: |

@@ -1,7 +1,6 @@
 includes:
     - 'layer:basic'
     - 'layer:apt'
-    - 'layer:snap'
     - 'interface:http'
     - 'interface:prometheus'
 repo: https://github.com/juju/jujushell-charm

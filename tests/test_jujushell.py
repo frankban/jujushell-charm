@@ -85,13 +85,13 @@ class TestUpdateLXCQuotas(unittest.TestCase):
         with patch('jujushell.call') as mock_call:
             jujushell.update_lxc_quotas(cfg)
         expected_calls = [
-            call('/snap/bin/lxc', 'profile', 'set', 'default',
+            call(jujushell.LXC, 'profile', 'set', jujushell.PROFILE_TERMSERVER,
                  'limits.cpu', '1'),
-            call('/snap/bin/lxc', 'profile', 'set', 'default',
+            call(jujushell.LXC, 'profile', 'set', jujushell.PROFILE_TERMSERVER,
                  'limits.cpu.allowance', '100%'),
-            call('/snap/bin/lxc', 'profile', 'set', 'default',
+            call(jujushell.LXC, 'profile', 'set', jujushell.PROFILE_TERMSERVER,
                  'limits.memory', '256MB'),
-            call('/snap/bin/lxc', 'profile', 'set', 'default',
+            call(jujushell.LXC, 'profile', 'set', jujushell.PROFILE_TERMSERVER,
                  'limits.processes', '100'),
         ]
         mock_call.assert_has_calls(expected_calls)
@@ -156,7 +156,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -180,7 +183,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 80,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'tls-cert': 'provided cert',
             'tls-key': 'provided key',
@@ -207,7 +213,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 80,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -231,7 +240,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 8080,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -257,7 +269,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'trace',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
@@ -298,7 +313,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'trace',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'tls-cert': 'my cert',
             'tls-key': 'my key',
@@ -324,7 +342,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 443,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -351,7 +372,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'debug',
             'port': 443,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -374,7 +398,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': 'provided cert',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -401,7 +428,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': 'agent cert',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -424,7 +454,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -478,7 +511,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': '',
         }
@@ -501,7 +537,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 42,
             'welcome-message': '',
         }
@@ -524,7 +563,10 @@ class TestBuildConfig(unittest.TestCase):
             'juju-cert': '',
             'log-level': 'info',
             'port': 4247,
-            'profiles': ['default', 'termserver-limited'],
+            'profiles': [
+                jujushell.PROFILE_TERMSERVER,
+                jujushell.PROFILE_TERMSERVER_LIMITED,
+            ],
             'session-timeout': 0,
             'welcome-message': 'these are\nthe voyages',
         }

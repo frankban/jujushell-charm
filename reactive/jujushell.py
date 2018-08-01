@@ -7,10 +7,7 @@ from charmhelpers.core import (
     host,
 )
 from charms import apt
-from charms.layer import (
-    jujushell,
-    snap,
-)
+from charms.layer import jujushell
 from charms.reactive import (
     is_flag_set,
     hook,
@@ -53,14 +50,6 @@ def stop():
 
 
 @when('jujushell.install')
-@when_not('snap.installed.lxd')
-def install_lxd():
-    hookenv.status_set('maintenance', 'installing lxd')
-    snap.install('lxd')
-
-
-@when('jujushell.install')
-@when('snap.installed.lxd')
 @when_not('apt.installed.zfsutils-linux')
 def install_zfsutils():
     hookenv.status_set('maintenance', 'installing zfsutils-linux')
@@ -104,7 +93,7 @@ def install_service():
     jujushell.install_service()
 
 
-@when('snap.installed.lxd')
+@when('jujushell.install')
 @when('apt.installed.zfsutils-linux')
 @only_once
 def setup_lxd():
@@ -158,11 +147,7 @@ def config_changed():
     config = hookenv.config()
     jujushell.build_config(config)
     if is_flag_set('jujushell.lxd.configured'):
-        try:
-            jujushell.update_lxc_quotas(config)
-        except Exception:
-            # Setting quotas can fail while lxd snap is being upgraded.
-            pass
+        jujushell.update_lxc_quotas(config)
         clear_flag('jujushell.lxd.image.imported.termserver')
     set_flag('jujushell.restart')
 
