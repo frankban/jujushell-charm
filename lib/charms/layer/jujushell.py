@@ -99,6 +99,7 @@ def build_config(cfg):
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
+        'lxd-socket-path': _lxd_socket(),
         'port': current_ports[0],
         'profiles': (PROFILE_TERMSERVER, PROFILE_TERMSERVER_LIMITED),
         'session-timeout': cfg.get('session-timeout', 0),
@@ -265,10 +266,22 @@ def _lxd_client():
     """Get a client connection to the LXD server."""
     import pylxd  # Imported here because pylxd is not immediately available.
     return pylxd.client.Client('http+unix://{}'.format(
-        parse.quote(_LXD_SOCKET, safe='')))
+        parse.quote(_lxd_socket(), safe='')))
 
 
-_LXD_SOCKET = '/var/lib/lxd/unix.socket'
+def _lxd_socket():
+    """Return the path to the LXD socket.
+
+    Raise an IOError if the LXD socket is not found.
+    """
+    paths = (
+        '/var/lib/lxd/unix.socket',
+        '/var/snap/lxd/common/lxd/unix.socket',
+    )
+    for path in paths:
+        if os.path.exists(path):
+            return path
+    raise IOError('cannot find LXD socket')
 
 
 def setup_lxd():

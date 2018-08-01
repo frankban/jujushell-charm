@@ -111,6 +111,7 @@ class TestTermserverPath(unittest.TestCase):
 
 @patch('charmhelpers.core.hookenv.open_port')
 @patch('charmhelpers.core.hookenv.close_port')
+@patch('os.path.exists', lambda _: True)
 class TestBuildConfig(unittest.TestCase):
 
     def setUp(self):
@@ -155,6 +156,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -182,6 +184,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'debug',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 80,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -212,6 +215,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'debug',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 80,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -239,6 +243,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'debug',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 8080,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -268,6 +273,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'trace',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -312,6 +318,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'trace',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -341,6 +348,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'debug',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 443,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -371,6 +379,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'debug',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 443,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -397,6 +406,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': 'provided cert',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -427,6 +437,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': 'agent cert',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -453,6 +464,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4/provided', '4.3.2.1/provided'],
             'juju-cert': '',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -510,6 +522,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -536,6 +549,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
@@ -562,6 +576,7 @@ class TestBuildConfig(unittest.TestCase):
             'juju-addrs': ['1.2.3.4:17070', '4.3.2.1:17070'],
             'juju-cert': '',
             'log-level': 'info',
+            'lxd-socket-path': '/var/lib/lxd/unix.socket',
             'port': 4247,
             'profiles': [
                 jujushell.PROFILE_TERMSERVER,
