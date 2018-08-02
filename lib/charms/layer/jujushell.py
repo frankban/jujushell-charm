@@ -20,8 +20,10 @@ import yaml
 
 # Define the LXD image name and profiles to use when launching instances.
 IMAGE_NAME = 'termserver'
-LXC = '/snap/bin/lxc'
-PROFILE_DEFAULT, PROFILE_TERMSERVER = 'default', 'termserver-limited'
+LXC = '/usr/bin/lxc'
+LXD = '/usr/bin/lxd'
+PROFILE_TERMSERVER = 'termserver'
+PROFILE_TERMSERVER_LIMITED = 'termserver-limited'
 
 
 def agent_path():
@@ -97,8 +99,9 @@ def build_config(cfg):
         'juju-cert': juju_cert,
         'image-name': IMAGE_NAME,
         'log-level': cfg['log-level'],
+        'lxd-socket-path': _lxd_socket(),
         'port': current_ports[0],
-        'profiles': (PROFILE_DEFAULT, PROFILE_TERMSERVER),
+        'profiles': (PROFILE_TERMSERVER, PROFILE_TERMSERVER_LIMITED),
         'session-timeout': cfg.get('session-timeout', 0),
         'welcome-message': _get_string(cfg, 'welcome-message'),
     }
@@ -143,14 +146,13 @@ def get_ports(cfg):
 def update_lxc_quotas(cfg):
     """Update the default profile to include resource limits from config."""
     hookenv.status_set('maintenance', 'updating LXC quotas')
-    call(LXC, 'profile', 'set', 'default', 'limits.cpu',
+    call(LXC, 'profile', 'set', PROFILE_TERMSERVER, 'limits.cpu',
          _get_string(cfg, 'lxc-quota-cpu-cores'))
-    call(LXC, 'profile', 'set', 'default',
-         'limits.cpu.allowance',
+    call(LXC, 'profile', 'set', PROFILE_TERMSERVER, 'limits.cpu.allowance',
          _get_string(cfg, 'lxc-quota-cpu-allowance'))
-    call(LXC, 'profile', 'set', 'default', 'limits.memory',
+    call(LXC, 'profile', 'set', PROFILE_TERMSERVER, 'limits.memory',
          _get_string(cfg, 'lxc-quota-ram'))
-    call(LXC, 'profile', 'set', 'default', 'limits.processes',
+    call(LXC, 'profile', 'set', PROFILE_TERMSERVER, 'limits.processes',
          _get_string(cfg, 'lxc-quota-processes'))
 
 
@@ -264,10 +266,22 @@ def _lxd_client():
     """Get a client connection to the LXD server."""
     import pylxd  # Imported here because pylxd is not immediately available.
     return pylxd.client.Client('http+unix://{}'.format(
-        parse.quote(_LXD_SOCKET, safe='')))
+        parse.quote(_lxd_socket(), safe='')))
 
 
-_LXD_SOCKET = '/var/snap/lxd/common/lxd/unix.socket'
+def _lxd_socket():
+    """Return the path to the LXD socket.
+
+    Raise an IOError if the LXD socket is not found.
+    """
+    paths = (
+        '/var/lib/lxd/unix.socket',
+        '/var/snap/lxd/common/lxd/unix.socket',
+    )
+    for path in paths:
+        if os.path.exists(path):
+            return path
+    raise IOError('cannot find LXD socket')
 
 
 def setup_lxd():
@@ -289,7 +303,7 @@ def setup_lxd():
 
 # Define the command used to initialize LXD.
 _LXD_INIT_COMMAND = """
-cat <<EOF | /snap/bin/lxd init --preseed
+cat <<EOF | {lxd} init --preseed
 networks:
 - name: jujushellbr0
   type: bridge
@@ -297,21 +311,21 @@ networks:
     ipv4.address: auto
     ipv6.address: none
 storage_pools:
-- name: data
+- name: jujushellstorage
   driver: zfs
 profiles:
-- name: {default}
+- name: {termserver}
   devices:
     root:
       path: /
-      pool: data
+      pool: jujushellstorage
       type: disk
     eth0:
       name: eth0
       nictype: bridged
       parent: jujushellbr0
       type: nic
-- name: {termserver}
+- name: {termserver_limited}
   config:
     user.user-data: |
       #cloud-config
@@ -319,8 +333,11 @@ profiles:
       - name: ubuntu
         shell: /bin/bash
 EOF
-""".format(default=PROFILE_DEFAULT, termserver=PROFILE_TERMSERVER)
-_LXD_WAIT_COMMAND = '/snap/bin/lxd waitready --timeout=30'
+""".format(
+    lxd=LXD,
+    termserver=PROFILE_TERMSERVER,
+    termserver_limited=PROFILE_TERMSERVER_LIMITED)
+_LXD_WAIT_COMMAND = '{} waitready --timeout=30'.format(LXD)
 
 
 def exterminate_containers(name=None, only_stopped=False, dry=False):
