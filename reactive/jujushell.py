@@ -103,7 +103,8 @@ def setup_lxd():
 
 
 @when('jujushell.lxd.configured')
-@when('jujushell.resource.available.jujushell')
+@when('jujushell.resource.available.termserver')
+@when('jujushell.resource.available.limited-termserver')
 @when_not('jujushell.lxd.image.imported.termserver')
 def import_image():
     hookenv.status_set('maintenance', 'importing termserver images')
